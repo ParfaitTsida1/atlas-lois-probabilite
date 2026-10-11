@@ -342,6 +342,21 @@ table.rank tr.sel { background: var(--accent-soft); box-shadow: inset 3px 0 0 va
 .lang select { padding: 4px 8px; font-size: .85rem; }
 .top { position: relative; }
 @media (max-width: 640px) { .lang { position: static; justify-content: flex-end; margin: -8px 0 8px; } }
+
+.sol-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 16px; }
+.sol-q { display: grid; gap: 8px; }
+.sol-seg { font-style: italic; color: var(--muted); font-size: .92rem; overflow-wrap: anywhere; }
+.sol-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 340px); gap: 16px; align-items: start; }
+@media (max-width: 800px) { .sol-body { grid-template-columns: minmax(0, 1fr); } }
+.sol-h { font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.sol-steps { margin: 4px 0 8px; padding-left: 1.3em; display: grid; gap: 6px; overflow-wrap: anywhere; }
+.sol-ans { margin-top: 8px; padding: 8px 12px; background: var(--hl-soft); border-radius: 8px; font-size: 1.1rem; }
+.sol-ans .sol-h { margin-right: 8px; }
+.sol-laws { display: grid; gap: 12px; }
+.sol-law h3 { margin-bottom: 8px; }
+.sol-chart { padding: 6px; }
+.sol-sum ul { margin: 6px 0 0; padding-left: 1.2em; display: grid; gap: 4px; }
+#exo-text { width: 100%; min-height: 150px; padding: 10px 12px; border: 1.5px solid var(--rule); border-radius: 8px; background: var(--paper); font-family: var(--f-body); font-size: 1rem; resize: vertical; }
 </style>
 
 <header class="top">
@@ -514,6 +529,23 @@ table.rank tr.sel { background: var(--accent-soft); box-shadow: inset 3px 0 0 va
 </div>
 
 <div id="view-fit" class="wrap" hidden>
+  <div><h2>Mes données et exercices</h2><p class="intro">Faites corriger un exercice complet, ou trouvez la loi qui correspond à vos propres données.</p></div>
+  <div class="chips" id="fit-modes" role="group" aria-label="Mode"><button type="button" class="chip on" data-fmode="ex">Corriger un exercice</button><button type="button" class="chip" data-fmode="data">Ajuster une loi à mes données</button></div>
+  <div id="fit-ex" class="wrap" style="padding:0">
+    <div class="panel fit-in">
+      <p class="intro">Collez l'énoncé complet, avec la loi et les questions. L'application identifie la loi, ses paramètres et chaque question, puis donne la correction détaillée avec les explications.</p>
+      <textarea id="exo-text" spellcheck="false" aria-label="Énoncé de l'exercice" placeholder="Ex. Soit X ∼ B(10 ; 0,3). Calculer P(X = 4), puis l'espérance de X."></textarea>
+      <div class="fit-row">
+        <label for="exo-conv">Écriture de la loi normale</label>
+        <select id="exo-conv"><option value="var">N(μ ; σ²) : variance</option><option value="sd">N(μ ; σ) : écart-type</option></select>
+        <button class="btn" type="button" id="exo-run">Corriger l'exercice</button>
+      </div>
+      <div><p class="note" style="margin-bottom:6px">Ou essayez un exemple :</p><div class="chips" id="exo-examples"></div></div>
+      <p class="err" id="exo-err" aria-live="polite"></p>
+    </div>
+    <div id="exo-out" hidden class="wrap" style="padding:0"></div>
+  </div>
+  <div id="fit-data" class="wrap" style="padding:0" hidden>
   <div><h2>Mes données : quelle loi leur correspond ?</h2><p class="intro">Collez vos valeurs (séparées par des espaces, des retours à la ligne ou des points-virgules) ou importez un fichier texte ou CSV. L'application estime les paramètres de chaque loi candidate, les classe et teste l'adéquation. Vos données restent sur votre appareil.</p></div>
   <div class="panel fit-in">
     <textarea id="fit-text" spellcheck="false" aria-label="Valeurs à analyser" placeholder="ex. 3 5 2 4 4 6 1 3 2 5 …"></textarea>
@@ -543,6 +575,7 @@ table.rank tr.sel { background: var(--accent-soft); box-shadow: inset 3px 0 0 va
         <li><b>p-valeur :</b> test du khi-deux pour des données discrètes (classes regroupées pour avoir au moins 5 individus attendus), test de Kolmogorov-Smirnov pour des données continues. Une p-valeur inférieure à 0,05 signifie que les données s'écartent de la loi. Pour Kolmogorov-Smirnov, les paramètres étant estimés sur les mêmes données, la p-valeur est un peu trop favorable.</li>
         <li><b>Limites :</b> les lois hypergéométrique, de Student et de Fisher ne sont pas ajustées (elles servent surtout à tester, pas à décrire des données). Avec peu de valeurs, plusieurs lois restent plausibles : une bonne loi n'est pas forcément la « vraie » loi.</li>
       </ul></div>
+  </div>
   </div>
 </div>
 
@@ -2025,6 +2058,300 @@ const FIT_EXAMPLES = [
 function exampleData(ex) { return withSeed(ex.seed, () => Array.from({ length: ex.n || (ex.id === 'poisson' ? 100 : 80) }, ex.gen)); }
 
 
+// ====================================================================
+// Correcteur d'exercices : lit un énoncé et renvoie la correction détaillée
+// ====================================================================
+const defaults = L => Object.fromEntries(L.params.map(q => [q.key, q.value]));
+// bornes élargies pour le correcteur : un énoncé peut donner λ = 0,001 ou σ = 500
+function constrainWide(L, P) {
+  const W = L.params.map(q => ({ q, min: q.min, max: q.max }));
+  L.params.forEach(q => { if (!q.int) { if (q.min > 0) q.min = 1e-9; if (typeof q.max !== 'function' && q.max > 1 && Number.isFinite(P[q.key])) q.max = Math.max(q.max, P[q.key]); } });
+  try { return constrain(L, P); } finally { W.forEach(w => { w.q.min = w.min; w.q.max = w.max; }); }
+}
+const nrm = s => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const NUMRE = '-?\\d+(?:[.,]\\d+)?(?:\\s*/\\s*\\d+)?';
+const toNum = s => { s = String(s).replace(/\s+/g, '').replace(',', '.'); if (s.includes('/')) { const [a, b] = s.split('/'); return Number(a) / Number(b); } return Number(s); };
+const numsIn = s => (String(s).match(new RegExp(NUMRE, 'g')) || []).map(toNum).filter(Number.isFinite);
+
+function prepText(text) {
+  return String(text).replace(/\r/g, '')
+    .replace(/[−–—]/g, '-')
+    .replace(/(\d+(?:[.,]\d+)?)\s*(?:²|\^2)/g, (m, a) => String(+(toNum(a) ** 2).toPrecision(12)).replace('.', ','))
+    .replace(/(\d+(?:[.,]\d+)?)\s*(?:%|pour\s*cent|percent|por\s*ciento|por\s*cento)/gi, (m, a) => String(+(toNum(a) / 100).toPrecision(12)).replace('.', ','));
+}
+
+const LAW_CUES = [
+  ['pascal', /binomial\w*\s+neg|negative\s+binomial|pascal/],
+  ['hypergeometric', /hypergeom|hipergeom/],
+  ['binomial', /binomial/],
+  ['bernoulli', /bernoulli/],
+  ['geometric', /geometri/],
+  ['poisson', /poisson/],
+  ['cuniform', /uniforme?\s+continu|continuous\s+uniform|uniform\w*\s+continu/],
+  ['uniform', /uniform/],
+  ['exponential', /exponenti|exponencial/],
+  ['lognormal', /log[\s-]?normal/],
+  ['normal', /normal|gauss|laplace/],
+  ['gamma', /\bgamma\b|\bgama\b|erlang/],
+  ['beta', /\bbeta\b/],
+  ['chi2', /\bkhi|\bchi|\bqui[\s-]?quadrad|\bji[\s-]?cuadrad/],
+  ['student', /student/],
+  ['fisher', /fisher|snedecor/]
+];
+const SD_LABELS = ['sigma', 'σ', 'ecart[\\s-]?type', 'standard\\s+deviation', 'desviacion(?:\\s+(?:tipica|estandar))?', 'desvio(?:\\s+padrao)?'];
+const VAR_LABELS = ['variance', 'varianza', 'variancia'];
+const MEAN_LABELS = ['mu', 'μ', 'moyenne', 'mean', 'media'];
+function grab(s, labels) {
+  for (const lab of labels) {
+    const m = new RegExp('(?:^|[^a-zA-Z])' + lab + '\\s*(?:=|:|de|d\'|of|del|da|do|egale?\\s+a|equal\\s+to|igual\\s+a)?\\s*(' + NUMRE + ')', 'i').exec(s);
+    if (m) return toNum(m[1]);
+  }
+  return NaN;
+}
+function lawFromNotation(chunk, opts) {
+  const re = /([A-Za-zÀ-ÿ\u{1D4D0}-\u{1D4E9}\u{1D4A0}-\u{1D4B5}χ][A-Za-zÀ-ÿ0-9²' \-\u{1D4A0}-\u{1D4E9}~∼]{0,40}?)\s*\(\s*([^()=<>≤≥a-zA-Z]*(?:\[[^\]]*\])?[^()=<>≤≥a-zA-Z]*|[^()]*(?:khi|chi)?[^()]*)\s*\)/gu;
+  let m; const out = [];
+  while ((m = re.exec(chunk))) {
+    const toks = m[1].trim().split(/\s+/); const args = m[2];
+    if (/[≤≥<>=]/.test(args) || !/\d/.test(args)) continue;
+    for (let i = 0; i < toks.length; i++) {
+      const cand = toks.slice(i).join(' ') + '(' + args + ')';
+      const r = parseLaw(cand);
+      if (!r.err && r.id && Object.keys(r.raw).length) {
+        const letter = (/\b([A-Z])\s*(?:~|∼|suit|follows|sigue|segue)/.exec(m[1]) || [])[1];
+        out.push({ ...r, letter, index: m.index, src: cand });
+        break;
+      }
+    }
+  }
+  return out;
+}
+function lawFromCue(sentence, opts) {
+  const n = nrm(sentence);
+  for (const [id, re] of LAW_CUES) {
+    const m = re.exec(n); if (!m) continue;
+    const after = sentence.slice(m.index + m[0].length), an = nrm(after);
+    const raw = {}; const notes = [];
+    const g = (labels) => grab(an, labels);
+    const L = getLaw(id);
+    switch (id) {
+      case 'bernoulli': case 'geometric': raw.p = g(['p']); if (!Number.isFinite(raw.p)) raw.p = numsIn(after).find(x => x > 0 && x <= 1); break;
+      case 'poisson': raw.lambda = g(['λ', 'lambda', 'parametre', 'parameter', 'parametro']); if (!Number.isFinite(raw.lambda)) raw.lambda = numsIn(after)[0]; break;
+      case 'exponential': {
+        raw.lambda = g(['λ', 'lambda', 'taux', 'rate', 'tasa', 'taxa']);
+        if (!Number.isFinite(raw.lambda)) { const mean = g(MEAN_LABELS); if (Number.isFinite(mean) && mean > 0) { raw.lambda = 1 / mean; notes.push(tl('le paramètre λ est déduit de la moyenne : λ = 1 / moyenne')); } else raw.lambda = numsIn(after)[0]; }
+        break;
+      }
+      case 'binomial': raw.n = (/(?:^|[^a-z])n\s*(?:=|:)\s*(\d+)/.exec(after) || [])[1]; raw.p = g(['p']);
+        if (raw.n === undefined || !Number.isFinite(raw.p)) { const ns = numsIn(after); if (ns.length >= 2) { raw.n = ns[0]; raw.p = ns[1]; } } else raw.n = +raw.n; break;
+      case 'pascal': { const ns = numsIn(after); raw.r = g(['r']); raw.p = g(['p']); if (!Number.isFinite(raw.r) || !Number.isFinite(raw.p)) { raw.r = ns[0]; raw.p = ns[1]; } break; }
+      case 'hypergeometric': {
+        const cs = k => { const mm = new RegExp('(?:^|[^A-Za-z])' + k + '\\s*(?:=|:)\\s*(' + NUMRE + ')').exec(after); return mm ? toNum(mm[1]) : NaN; };
+        raw.N = cs('N'); raw.K = cs('K'); raw.n = cs('n');
+        if (![raw.N, raw.K, raw.n].every(Number.isFinite)) { const ns = numsIn(after); [raw.N, raw.K, raw.n] = ns; } break;
+      }
+      case 'uniform': case 'cuniform': {
+        const ns = numsIn(after); const hasBr = /[\[\]]/.test(after.slice(0, 40));
+        raw.a = ns[0]; raw.b = ns[1];
+        if (ns.length === 1) { raw.a = 1; raw.b = ns[0]; }
+        if (id === 'uniform' && (hasBr || [raw.a, raw.b].some(x => !Number.isInteger(x)))) return lawFromCueResult('cuniform', raw, notes);
+        break;
+      }
+      case 'normal': case 'lognormal': {
+        if (/centre\w*\s+reduit|standard\s+normal|normal\s+estandar|normal\s+padrao|normal\s+padrao/.test(an) && id === 'normal') { raw.mu = 0; raw.sigma = 1; break; }
+        let mu = g(MEAN_LABELS), sd = g(SD_LABELS), vr = g(VAR_LABELS);
+        if (id === 'lognormal') { mu = g(['mu', 'μ']); }
+        if (Number.isFinite(mu) && (Number.isFinite(sd) || Number.isFinite(vr))) { raw.mu = mu; raw.sigma = Number.isFinite(sd) ? sd : Math.sqrt(vr); }
+        else { const ns = numsIn(after); raw.mu = ns[0]; raw.sigma = ns.length > 1 ? (opts.normalConv === 'sd' ? ns[1] : Math.sqrt(Math.max(ns[1], 0))) : NaN; if (ns.length > 1) notes.push(opts.normalConv === 'sd' ? tl('le second paramètre est lu comme l\'écart-type σ') : tl('le second paramètre est lu comme la variance σ²')); }
+        break;
+      }
+      case 'gamma': { const ns = numsIn(after); raw.k = g(['k', 'forme', 'shape', 'forma']); raw.lambda = g(['λ', 'lambda', 'taux', 'rate', 'tasa', 'taxa']); if (!Number.isFinite(raw.k) || !Number.isFinite(raw.lambda)) { raw.k = ns[0]; raw.lambda = ns[1]; } break; }
+      case 'beta': { const ns = numsIn(after); raw.alpha = g(['α', 'alpha']); raw.beta = g(['β', 'beta']); if (!Number.isFinite(raw.alpha) || !Number.isFinite(raw.beta)) { raw.alpha = ns[0]; raw.beta = ns[1]; } break; }
+      case 'chi2': case 'student': { const ns = numsIn(after.replace(/^\s*2\b/, '')); raw.k = g(['k', 'degres de liberte', 'degrees of freedom', 'grados de libertad', 'graus de liberdade', 'ddl', 'df']); if (!Number.isFinite(raw.k)) raw.k = ns[0]; break; }
+      case 'fisher': { const ns = numsIn(after); raw.d1 = ns[0]; raw.d2 = ns[1]; break; }
+    }
+    if (!L.params.every(q => Number.isFinite(raw[q.key]))) return { id, raw: null, partial: true };
+    return { id, raw, notes };
+  }
+  return null;
+}
+function lawFromCueResult(id, raw, notes) { return { id, raw, notes }; }
+
+const VAR_DECL = /\b(?:soit|let|sea|seja|on\s+note|denote|designe|designa)\s+([A-Z])\b/i;
+function findDefinitions(text, opts) {
+  const t = prepText(text); const defs = []; const unresolved = [];
+  const sentences = t.split(/\n+|(?<=[.!?])\s+/).map(s => s.trim()).filter(Boolean);
+  let pending = null; const used = new Set();
+  const nextVar = () => ['X', 'Y', 'Z', 'T', 'N', 'U', 'V', 'W'].find(v => !used.has(v)) || 'X';
+  for (const s of sentences) {
+    const decl = VAR_DECL.exec(s.replace(/^\s*[\(\[]?[a-z0-9]{1,2}[\).]\s+/i, ''));
+    if (decl && !/[~∼]|suit|follows|sigue|segue/i.test(s)) pending = decl[1].toUpperCase();
+    const viaNot = lawFromNotation(s, opts);
+    let found = viaNot;
+    if (!found.length) { const c = lawFromCue(s, opts); if (c && c.raw) found = [{ ...c, letter: (/\b([A-Z])\s*(?:~|∼|suit|follows|sigue|segue)/.exec(s) || [])[1] }]; else if (c && c.partial) unresolved.push({ id: c.id, sentence: s }); }
+    for (const f of found) {
+      let v = f.letter || (decl && decl[1].toUpperCase()) || pending || nextVar(); pending = null;
+      if (used.has(v)) { if (f.letter) continue; v = nextVar(); }
+      const L = getLaw(f.id); const notes = (f.notes || []).slice();
+      let raw = { ...f.raw };
+      if ((f.id === 'normal' || f.id === 'lognormal') && opts.normalConv === 'sd' && f.src) { raw.sigma = f.raw.sigma ** 2; notes.splice(0, notes.length, tl('le second paramètre est lu comme l\'écart-type σ')); }
+      const P = constrainWide(L, { ...defaults(L), ...raw });
+      const clamped = L.params.filter(q => Math.abs(P[q.key] - raw[q.key]) > 1e-9 || !Number.isFinite(raw[q.key])).map(q => q.sym);
+      defs.push({ v, id: f.id, L, P, raw, notes, clamped }); used.add(v);
+    }
+  }
+  return { defs, unresolved, sentences };
+}
+
+// Aide : lois probables pour un énoncé qui ne donne pas la loi
+const CUE_GUESS = [
+  ['hypergeometric', /sans remise|without replacement|sin reposicion|sem reposicao|sans remettre/, 'tirage sans remise'],
+  ['geometric', /premier succes|first success|primer exito|primeiro sucesso|jusqu'a (?:obtenir|ce que)|until the first|hasta (?:obtener|que)|ate (?:obter|que)/, 'attente du premier succès'],
+  ['poisson', /en moyenne[^.?!]{0,60}(?:par|chaque|\/)\s*(?:minute|heure|jour|an|mois|semaine|seconde)|on average[^.?!]{0,60}per\s+(?:minute|hour|day|year|month|week|second)|por\s+(?:minuto|hora|dia|ano|mes|semana|segundo)[^.?!]{0,60}(?:en promedio|em media)|(?:en promedio|em media)[^.?!]{0,60}por\s+(?:minuto|hora|dia|ano|mes|semana|segundo)/, 'événements indépendants à taux moyen constant'],
+  ['exponential', /duree de vie|lifetime|vida util|tempo de vida|temps d'attente|waiting time|tiempo de espera|tempo de espera|sans usure|memoryless|sin memoria|sem memoria/, 'durée d\'attente ou de vie sans usure'],
+  ['cuniform', /au hasard dans l'intervalle|uniformement|uniformly|uniformemente|at random in the interval|al azar en el intervalo|ao acaso no intervalo/, 'valeur au hasard dans un intervalle'],
+  ['binomial', /\d+\s*(?:fois|times|veces|vezes|essais|trials|ensayos|tentativas|epreuves|lancers|throws|lanzamientos|lancamentos|pieces|parts|piezas|pecas)|independan?t|independiente|independente/, 'nombre de succès sur n essais indépendants'],
+  ['normal', /(?:moyenne|mean|media)[^.?!]{0,40}(?:ecart[\s-]?type|standard deviation|desviacion|desvio)|cloche|bell curve|campana|sino/, 'grandeur en cloche (moyenne et écart-type)']
+];
+function guessLaws(text) {
+  const n = nrm(text); const out = [];
+  for (const [id, re, why] of CUE_GUESS) if (re.test(n)) out.push({ id, why });
+  return out;
+}
+
+// ---------- Questions ----------
+const Q_WORDS = /calcul|determin|quelle?s?\b|combien|donner|trouv|montr|exprim|\?|find|compute|calculate|what|give|show|how many|calcule|cual|cuant|halle|encuentre|qual\b|quanto|encontre|obtenha|obtain|obtenir|obtener|obter|exprimer|express|evaluate|evalu/;
+const OPS = { '<=': 'le', '≤': 'le', '=<': 'le', '<': 'lt', '>=': 'ge', '≥': 'ge', '=>': 'ge', '>': 'gt', '=': 'eq', '==': 'eq' };
+function findQuestions(text, defs, opts) {
+  const t = prepText(text); const out = [];
+  const known = new Set(defs.map(d => d.v)); const dflt = defs[0] ? defs[0].v : 'X';
+  const vOf = l => { const u = (l || '').toUpperCase(); return known.has(u) ? u : dflt; };
+  const segs = t.split(/\n+|(?<=[.!?])\s+/).map(s => s.trim()).filter(Boolean);
+  for (const seg of segs) {
+    const label = (/^\s*(\(?[a-z0-9]{1,2}[\).])\s+/i.exec(seg) || [])[1] || '';
+    const n = nrm(seg); const found = [];
+    // P(X <= k), P(X = k), P(a <= X <= b)
+    let m; const re2 = new RegExp('p\\s*\\(\\s*(' + NUMRE + ')\\s*(<=|≤|<)\\s*([a-z])\\s*(<=|≤|<)\\s*(' + NUMRE + ')\\s*\\)', 'gi');
+    const used = [];
+    while ((m = re2.exec(n))) { found.push({ kind: 'event', v: vOf(m[3]), q: { type: 'between', a: toNum(m[1]), b: toNum(m[5]), strictA: m[2] === '<', strictB: m[4] === '<' } }); used.push([m.index, m.index + m[0].length]); }
+    const re1 = new RegExp('p\\s*\\(\\s*([a-z])?\\s*(<=|>=|=<|=>|==|≤|≥|<|>|=)\\s*(' + NUMRE + ')\\s*\\)', 'gi');
+    while ((m = re1.exec(n))) { if (used.some(([a, b]) => m.index >= a && m.index < b)) continue; found.push({ kind: 'event', v: vOf(m[1]), q: { type: OPS[m[2]], a: toNum(m[3]) } }); }
+    // quantile : P(X <= x) = 0,95
+    const reQ = new RegExp('p\\s*\\(\\s*([a-z])\\s*(<=|>=|≤|≥|<|>)\\s*[a-z]\\s*\\)\\s*=\\s*(' + NUMRE + ')', 'gi');
+    while ((m = reQ.exec(n))) { const al = toNum(m[3]); const ge = /≥|>=|>/.test(m[2]); found.push({ kind: 'quantile', v: vOf(m[1]), alpha: ge ? 1 - al : al, text: m[0] }); }
+    const reQ2 = new RegExp('(?:quantile|quantil|percentile|percentil|fractile)[^0-9-]{0,30}(' + NUMRE + ')', 'gi');
+    while ((m = reQ2.exec(n))) { if (found.some(f => f.kind === 'quantile')) break; const al = toNum(m[1]); if (al > 0 && al < 1) found.push({ kind: 'quantile', v: dflt, alpha: al, text: m[0] }); }
+    const isQ = Q_WORDS.test(n);
+    const hasNotation = found.some(f => f.kind === 'event' || f.kind === 'quantile');
+    const isDef = /\b(?:soit|let|sea|seja)\b/.test(n) || /(?:~|∼|suit|follows|sigue|segue)/.test(seg);
+    // verbal events
+    if (!hasNotation && isQ && /probabilit|probability|probabilidad|probabilidade/.test(n)) {
+      const v = dflt; const num = '(' + NUMRE + ')';
+      let mm;
+      if ((mm = new RegExp('(?:entre|between)\\s+' + num + '\\s+(?:et|and|y|e)\\s+' + num).exec(n))) found.push({ kind: 'event', v, q: { type: 'between', a: toNum(mm[1]), b: toNum(mm[2]) } });
+      else if ((mm = new RegExp('(?:au plus|au maximum|at most|no maximo|como maximo|menos ou egal|less than or equal to|maximo de)\\s+(?:de\\s+|a\\s+|of\\s+)?' + num).exec(n))) found.push({ kind: 'event', v, q: { type: 'le', a: toNum(mm[1]) } });
+      else if ((mm = new RegExp('(?:au moins|at least|al menos|pelo menos|minimo de|au minimum)\\s+(?:de\\s+|a\\s+|of\\s+)?' + num).exec(n))) found.push({ kind: 'event', v, q: { type: 'ge', a: toNum(mm[1]) } });
+      else if ((mm = new RegExp('(?:exactement|exactly|exactamente|exatamente)\\s+' + num).exec(n))) found.push({ kind: 'event', v, q: { type: 'eq', a: toNum(mm[1]) } });
+      else if ((mm = new RegExp('(?:strictement\\s+)?(?:moins de|inferieur(?:e)?\\s+a|less than|fewer than|menos de|menor que|menos que|inferior a|abaixo de|below)\\s+' + num).exec(n))) found.push({ kind: 'event', v, q: { type: 'lt', a: toNum(mm[1]) } });
+      else if ((mm = new RegExp('(?:plus de|superieur(?:e)?\\s+a|more than|greater than|above|exceed\\w*|depasse\\w*|mas de|mayor que|mais de|mais que|superior a|acima de)\\s+' + num).exec(n))) found.push({ kind: 'event', v, q: { type: 'gt', a: toNum(mm[1]) } });
+    }
+    // moments : seulement dans une phrase de question qui ne définit pas la loi
+    if (isQ && !isDef) {
+      const v = dflt;
+      if (/esperance|expected value|expectation|valor esperado|esperanza|\bmean\b|moyenne|\bmedia\b/.test(n) && !/p\s*\(/.test(n)) found.push({ kind: 'mean', v });
+      if (/variance|varianza|variancia/.test(n)) found.push({ kind: 'variance', v });
+      if (/ecart[\s-]?type|standard deviation|desviacion|desvio/.test(n)) found.push({ kind: 'sd', v });
+      if (/mediane|\bmedian\b|mediana/.test(n)) found.push({ kind: 'median', v });
+      if (/\bmode\b|\bmoda\b/.test(n)) found.push({ kind: 'mode', v });
+    }
+    // notations E(Y), V(Y), Var(Y), σ(Y)
+    if (!isDef) {
+      const reM = /(?:^|[^a-z])(e|v|var|sigma|σ)\s*\(\s*([a-z])\s*\)/gi;
+      while ((m = reM.exec(n))) { const k = m[1].toLowerCase(), v = vOf(m[2]); const kind = k === 'e' ? 'mean' : (k === 'v' || k === 'var') ? 'variance' : 'sd'; if (!found.some(f => f.kind === kind && f.v === v)) found.push({ kind, v }); }
+    }
+    if (found.length) found.forEach(f => out.push({ ...f, label, seg: seg.replace(/\s+/g, ' ').slice(0, 220) }));
+    else if (isQ && !isDef && segs.length > 1) out.push({ kind: 'unknown', label, seg: seg.slice(0, 220), v: dflt });
+  }
+  return out;
+}
+
+// ---------- Résolution ----------
+function normalizeEvent(L, q) {
+  // ramène un événement discret à des bornes entières ; renvoie { q, note }
+  if (isCont(L)) { const type = q.type === 'lt' ? 'le' : q.type === 'gt' ? 'ge' : q.type; return { q: { ...q, type }, note: (q.type === 'lt' || q.type === 'gt') ? tl('Pour une loi continue, P(X = x) = 0 : inégalités larges et strictes donnent le même résultat.') : '' }; }
+  let { type, a, b } = q; let note = '';
+  const isInt = Number.isInteger(a) && (b === undefined || Number.isInteger(b));
+  if (type === 'between') { const lo = q.strictA ? Math.floor(a) + 1 : Math.ceil(a), hi = q.strictB ? Math.ceil(b) - 1 : Math.floor(b); if (!isInt || q.strictA || q.strictB) note = tlx`Les valeurs de X sont entières : l'événement revient à ${lo} ≤ X ≤ ${hi}.`; return { q: { type: 'between', a: lo, b: hi }, note }; }
+  if (Number.isInteger(a)) return { q: { type, a, b }, note };
+  if (type === 'eq') return { q: { type: 'eq', a }, note: tl('X ne prend que des valeurs entières : la probabilité est nulle.') };
+  const A = type === 'le' || type === 'lt' ? (type === 'le' ? Math.floor(a) : Math.ceil(a) - 1) : (type === 'ge' ? Math.ceil(a) : Math.floor(a) + 1);
+  return { q: { type: type === 'le' || type === 'lt' ? 'le' : 'ge', a: A }, note: tlx`Les valeurs de X sont entières : l'événement revient à ${eventTxt({ type: type === 'le' || type === 'lt' ? 'le' : 'ge', a: A })}.` };
+}
+function solveQuestion(item, defsByVar) {
+  const d = defsByVar[item.v]; if (!d) return { item, err: tl('Aucune loi n\'a été trouvée pour cette variable.') };
+  const { L, P } = d; const out = { item, v: item.v, steps: [], answer: '', note: '' };
+  const X = item.v;
+  const T = isCont(L) ? null : table(L, P);
+  if (item.kind === 'event') {
+    const { q, note } = normalizeEvent(L, item.q); out.note = note;
+    const ev = eventTxt(q).replace(/X/g, X);
+    if (isCont(L)) {
+      const p = probC(L, P, q);
+      out.steps.push(tlx`Loi continue : on lit la fonction de répartition F(x) = P(X ≤ x).`);
+      if (L.id === 'normal') {
+        const sd = P.sigma, z = a => (a - P.mu) / sd;
+        out.steps.push(tlx`On centre et on réduit : Z = (X − μ) / σ = (X − ${fmt(P.mu)}) / ${fmt(sd)} suit 𝓝(0 ; 1).`);
+        if (q.type === 'between') out.steps.push(`z₁ = (${fmt(q.a)} − ${fmt(P.mu)}) / ${fmt(sd)} = ${fmt(z(q.a), 4)} ; z₂ = (${fmt(q.b)} − ${fmt(P.mu)}) / ${fmt(sd)} = ${fmt(z(q.b), 4)}`);
+        else out.steps.push(`z = (${fmt(q.a)} − ${fmt(P.mu)}) / ${fmt(sd)} = ${fmt(z(q.a), 4)}`);
+      }
+      out.steps.push(calcDetailC(L, P, q).replace(/X/g, X));
+      out.answer = `${ev} = <b>${fmt(p, 4)}</b> <span class="note">(≈ ${fmt(p * 100, 2)} %)</span>`; out.value = p;
+    } else {
+      const p = prob(T, q);
+      const pm = L.F.pmf; out.steps.push(tlx`Loi de probabilité : ${pm}`);
+      if (q.type === 'eq' && !(q.a >= L.support(P).min && q.a <= L.support(P).max)) out.steps.push(tl('La valeur demandée n\'appartient pas au support de la loi : la probabilité est nulle.'));
+      else out.steps.push(calcDetailD(L, P, T, q, p).replace(/X/g, X));
+      out.answer = `${ev} = <b>${fmt(p, 4)}</b> <span class="note">(≈ ${fmt(p * 100, 2)} %)</span>`; out.value = p;
+    }
+  } else if (item.kind === 'mean' || item.kind === 'variance' || item.kind === 'sd') {
+    const m = L.mean(P), v = L.variance(P);
+    const val = item.kind === 'mean' ? m : item.kind === 'variance' ? v : Math.sqrt(v);
+    const formula = item.kind === 'mean' ? L.F.mean : item.kind === 'variance' ? L.F.variance : tl('σ = √V(X), la racine carrée de la variance.');
+    out.steps.push(tlx`Formule du cours : ${formula.replace(/\bX\b/g, X)}`);
+    if (item.kind === 'sd') out.steps.push(`V(${X}) = ${fmtMoment(v)}`);
+    out.answer = `${item.kind === 'mean' ? `E(${X})` : item.kind === 'variance' ? `V(${X})` : `σ(${X})`} = <b>${fmtMoment(val)}</b>`; out.value = val;
+  } else if (item.kind === 'median' || item.kind === 'mode') {
+    const S = summaryLaw(L, P);
+    const val = item.kind === 'median' ? S.median : (S.modeTxt || S.mode);
+    out.steps.push(item.kind === 'median' ? tl('La médiane est la valeur m telle que F(m) = 0,5 (la plus petite pour une loi discrète).') : tl('Le mode est la valeur la plus probable (le maximum de la densité ou de la loi de probabilité).'));
+    out.answer = `${item.kind === 'median' ? tl('médiane') : tl('mode')} = <b>${typeof val === 'number' ? fmtMoment(val) : val}</b>`; out.value = val;
+  } else if (item.kind === 'quantile') {
+    const al = item.alpha;
+    if (!(al > 0 && al < 1)) return { item, err: tl('L\'ordre α du quantile doit être strictement compris entre 0 et 1 (par exemple 0,95).') };
+    out.steps.push(tlx`On cherche la plus petite valeur x telle que F(x) = P(${X} ≤ x) ≥ ${fmt(al)}.`);
+    let x;
+    if (isCont(L)) {
+      x = quantile(L, P, al);
+      if (L.id === 'normal') { const z = quantile(getLaw('normal'), { mu: 0, sigma: 1 }, al); out.steps.push(tlx`Dans la table de 𝓝(0 ; 1) : z = ${fmt(z, 4)} pour Φ(z) = ${fmt(al)} ; donc x = μ + σ z = ${fmt(P.mu)} + ${fmt(P.sigma)} × ${fmt(z, 4)}.`); }
+      else out.steps.push(tl('On inverse la fonction de répartition F (ici numériquement).'));
+    } else {
+      const i = T.cs.findIndex(c => c >= al - 1e-12); x = i < 0 ? T.ks[T.ks.length - 1] : T.ks[i];
+      out.steps.push(tlx`On cumule les probabilités jusqu'à dépasser ${fmt(al)} : F(${x}) = ${fmt(T.cs[i < 0 ? T.cs.length - 1 : i], 4)}.`);
+    }
+    out.answer = `x<sub>${fmt(al)}</sub> = <b>${fmt(x, 4)}</b>`; out.value = x;
+  }
+  return out;
+}
+function solveExercise(text, opts = {}) {
+  opts = { normalConv: 'var', ...opts };
+  let { defs, unresolved } = findDefinitions(text, opts);
+  if (opts.forced) { const L = getLaw(opts.forced.id), P = constrainWide(L, { ...defaults(L), ...opts.forced.P }); defs = [{ v: 'X', id: L.id, L, P, raw: P, notes: [], clamped: [] }]; unresolved = []; }
+  const defsByVar = Object.fromEntries(defs.map(d => [d.v, d]));
+  const questions = findQuestions(text, defs, opts);
+  const solutions = questions.map(q => q.kind === 'unknown' ? { item: q, err: tl('Cette question n\'a pas été reconnue : essayez de la reformuler avec P(X ≤ k), E(X), V(X)…') } : solveQuestion(q, defsByVar));
+  return { defs, unresolved, questions, solutions, guesses: defs.length ? [] : guessLaws(text) };
+}
+
 // ---------- Traduction de la page statique et des données ----------
 const INLINE_TAGS = new Set(['VAR', 'SPAN', 'B', 'SUP', 'SUB', 'I', 'SMALL', 'BR', 'EM', 'CODE']);
 const IS_ID = s => /^[a-z0-9_]+$/.test(s);
@@ -2073,7 +2400,6 @@ function renderUsage(L) {
 const $ = s => document.querySelector(s);
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const isC = L => L.kind === 'continuous';
-const defaults = L => Object.fromEntries(L.params.map(q => [q.key, q.value]));
 
 const state = { law: LAWS[1], params: {}, overlay: 'none', calc: { type: 'le', a: 8, b: 10 }, sim: null, anim: null };
 LAWS.forEach(L => { state.params[L.id] = constrain(L, defaults(L)); });
@@ -2965,8 +3291,104 @@ $('#fit-out').addEventListener('click', e => {
   const tr = e.target.closest('[data-fsel]'); if (tr && fit.res) { fit.sel = +tr.dataset.fsel; renderFit(); }
 });
 
+// ---------- Correcteur d'exercices (interface) ----------
+const EXO_EXAMPLES = [
+  { label: tl('Binomiale : tirs au but'), text: tl('Soit X la variable aléatoire qui suit la loi binomiale B(10 ; 0,3).\n1) Calculer P(X = 4).\n2) Calculer la probabilité d\'obtenir au moins 2 succès.\n3) Calculer l\'espérance et la variance de X.') },
+  { label: tl('Poisson : appels reçus'), text: tl('Le nombre X d\'appels reçus par minute suit une loi de Poisson de paramètre 4.\n1) Calculer la probabilité de recevoir au plus 2 appels en une minute.\n2) Calculer P(X ≥ 6).') },
+  { label: tl('Normale : tailles'), text: tl('La taille X des adultes d\'une population suit la loi normale N(170 ; 64).\n1) Calculer P(X ≤ 180).\n2) Calculer P(160 ≤ X ≤ 180).\n3) Déterminer la valeur x telle que P(X ≤ x) = 0,95.') },
+  { label: tl('Exponentielle : durée de vie'), text: tl('La durée de vie X d\'une ampoule suit une loi exponentielle de moyenne 1000 heures.\nCalculer la probabilité que l\'ampoule dure plus de 1500 heures.\nCalculer l\'espérance et l\'écart-type de X.') }
+];
+const exo = { res: null, text: '' };
+function exoParamForm(id, v) {
+  const L = getLaw(id), P = constrain(L, defaults(L));
+  return `<div class="panel exo-form" data-form-var="${v}"><div class="slot-head"><b>${tl('Choisissez la loi et ses paramètres')}</b> ${lawSelectHTML(id, 'data-exo-law="1" aria-label="' + esc(tl('Loi')) + '"')}</div>
+    <div id="exo-params">${paramRowsHTML(L, P, 'E')}</div>
+    <button class="btn" type="button" id="exo-force">${tl('Corriger avec cette loi')}</button></div>`;
+}
+let exoForced = null;
+function runExo(forced) {
+  const text = $('#exo-text').value; exo.text = text;
+  const err = $('#exo-err'); err.textContent = '';
+  if (!text.trim()) { err.textContent = tl('Collez ou saisissez un énoncé.'); $('#exo-out').hidden = true; return; }
+  const res = solveExercise(text, { normalConv: $('#exo-conv').value, forced: forced || exoForced });
+  exo.res = res; renderExo(res);
+}
+function lawCard(d) {
+  const { L, P } = d; const m = L.mean(P), v = L.variance(P);
+  const pm = isC(L) ? L.F.pdf : L.F.pmf;
+  return `<div class="panel sol-law"><h3><var>${d.v}</var> ∼ ${L.notation(P)} <span class="note">· ${lawTitle(L)}</span></h3>
+    <div class="table-wrap"><table class="mini"><tbody>
+      <tr><th scope="row">${tl('Paramètres')}</th><td>${L.params.map(q => `<var>${q.sym}</var> = ${fmt(P[q.key], 4)}`).join(' ; ')}</td></tr>
+      <tr><th scope="row">${tl('Support')}</th><td class="f">${L.supportTxt(P)}</td></tr>
+      <tr><th scope="row">${isC(L) ? tl('Densité') : tl('Loi de probabilité')}</th><td class="f">${pm}</td></tr>
+      <tr><th scope="row">${tl('Espérance')}</th><td class="f">${L.F.mean} = <b>${fmtMoment(m)}</b></td></tr>
+      <tr><th scope="row">${tl('Variance')}</th><td class="f">${L.F.variance} = <b>${fmtMoment(v)}</b></td></tr></tbody></table></div>
+    ${d.notes.length ? `<p class="note">${tl('Lecture de l\'énoncé')} : ${d.notes.map(esc).join(' ; ')}.</p>` : ''}
+    ${d.clamped.length ? `<p class="note">${tlx`Paramètre(s) hors des limites de l'application, ramené(s) à la valeur autorisée la plus proche : ${d.clamped.join(', ')}.`}</p>` : ''}
+    <button type="button" class="btn ghost sm" data-open="${L.id}" data-exoload="${d.v}">${tlx`Ouvrir la fiche : ${L.name}`}</button></div>`;
+}
+function solCard(s, i, byVar) {
+  const it = s.item;
+  const head = `<div class="qtag">${tlx`Question ${it.label ? esc(it.label.replace(/[()]/g, '').replace(/\.$/, '')) : i + 1}`}</div><p class="sol-seg">${esc(it.seg)}</p>`;
+  if (s.err) return `<li class="panel sol-q">${head}<p class="err">${s.err}</p></li>`;
+  const d = byVar[s.v]; let chart = '';
+  try { if (it.kind === 'event') { const { q } = normalizeEvent(d.L, it.q); chart = `<div class="chart-card sol-chart">${isC(d.L) ? densityChart(d.L, d.P, q) : pmfChart(d.L, d.P, table(d.L, d.P), q)}</div>`; } } catch (e) {}
+  return `<li class="panel sol-q">${head}<div class="sol-body"><div><p class="sol-h">${tl('Méthode')}</p><ol class="sol-steps">${s.steps.map(x => `<li><span class="math">${x}</span></li>`).join('')}</ol>
+    ${s.note ? `<p class="note">${s.note}</p>` : ''}<p class="sol-ans"><span class="sol-h">${tl('Réponse')}</span> <span class="math">${s.answer}</span></p></div>${chart}</div></li>`;
+}
+function renderExo(res) {
+  const out = $('#exo-out'); out.hidden = false;
+  const byVar = Object.fromEntries(res.defs.map(d => [d.v, d]));
+  let html = '';
+  if (!res.defs.length) {
+    const g = res.guesses.length ? res.guesses : (res.unresolved.length ? [{ id: res.unresolved[0].id, why: '' }] : []);
+    html += `<div class="panel"><h3>${tl('Je n\'ai pas trouvé la loi de la variable')}</h3><p>${tl('Écrivez-la dans l\'énoncé, par exemple « X suit B(10 ; 0,3) » ou « X suit la loi de Poisson de paramètre 4 », ou choisissez-la ci-dessous.')}</p>
+      ${g.length ? `<p class="note">${tl('Indices trouvés dans l\'énoncé :')} ${g.map(x => `${getLaw(x.id).name}${x.why ? ' (' + esc(tl(x.why)) + ')' : ''}`).join(' ; ')}.</p>` : ''}</div>
+      ${exoParamForm(g.length ? g[0].id : 'binomial', 'X')}`;
+    out.innerHTML = html; return;
+  }
+  html += `<div class="sec-head"><h2>${tl('Données de l\'exercice')}</h2></div><div class="sol-laws">${res.defs.map(lawCard).join('')}</div>`;
+  if (res.unresolved.length) html += `<p class="note">${tl('Une loi a été reconnue sans que ses paramètres puissent être lus : précisez-les dans l\'énoncé.')}</p>`;
+  if (!res.solutions.length) html += `<div class="panel"><p>${tl('Aucune question reconnue. Formulez-les avec P(X ≤ k), E(X), V(X), « au moins », « au plus », « entre … et … »…')}</p></div>`;
+  else {
+    html += `<div class="sec-head"><h2>${tl('Correction détaillée')}</h2></div><ol class="sol-list">${res.solutions.map((s, i) => solCard(s, i, byVar)).join('')}</ol>`;
+    const ok = res.solutions.filter(s => !s.err);
+    if (ok.length) html += `<div class="panel sol-sum"><h3>${tl('Récapitulatif des réponses')}</h3><ul>${ok.map(s => `<li><span class="math">${s.answer}</span></li>`).join('')}</ul></div>`;
+  }
+  html += `<p class="note">${tl('Cette correction est calculée par l\'application selon les formules du cours, sans service d\'intelligence artificielle. Vérifiez toujours que la loi et les paramètres lus correspondent à votre énoncé.')}</p>`;
+  out.innerHTML = html;
+}
+$('#exo-run').addEventListener('click', () => { exoForced = null; runExo(); });
+$('#exo-examples').addEventListener('click', e => { const b = e.target.closest('[data-exo]'); if (!b) return; $('#exo-text').value = EXO_EXAMPLES[+b.dataset.exo].text; exoForced = null; runExo(); });
+$('#exo-out').addEventListener('change', e => {
+  if (e.target.dataset.exoLaw) { const f = $('.exo-form'); f.outerHTML = exoParamForm(e.target.value, 'X'); $('#exo-out [data-exo-law]').focus(); }
+});
+$('#exo-out').addEventListener('input', e => {
+  const el = e.target, key = el.dataset.key; if (!key || el.dataset.slot !== 'E' || el.value === '') return;
+  const sel = $('#exo-out [data-exo-law]'), L = getLaw(sel.value);
+  const P = {}; $$('#exo-params input[type=number]').forEach(n => { P[n.dataset.key] = parseFloat(n.value); });
+  P[key] = parseFloat(el.value); constrain(L, P);
+  L.params.forEach(q => $$(`#exo-params [data-key="${q.key}"]`).forEach(n => { if (n !== el) n.value = n.type === 'number' ? +P[q.key].toFixed(4) : P[q.key]; }));
+});
+$('#exo-out').addEventListener('click', e => {
+  if (e.target.id === 'exo-force') {
+    const sel = $('#exo-out [data-exo-law]'), L = getLaw(sel.value), P = {};
+    $$('#exo-params input[type=number]').forEach(n => { P[n.dataset.key] = parseFloat(n.value); });
+    constrain(L, P); exoForced = { id: L.id, P }; runExo(exoForced);
+  }
+  const o = e.target.closest('[data-exoload]');
+  if (o && exo.res) { const d = exo.res.defs.find(x => x.v === o.dataset.exoload); if (d) state.params[d.id] = constrain(d.L, { ...state.params[d.id], ...d.P }); }
+});
+$('#fit-modes').addEventListener('click', e => {
+  const b = e.target.closest('[data-fmode]'); if (!b) return;
+  $$('#fit-modes [data-fmode]').forEach(x => x.classList.toggle('on', x === b));
+  $('#fit-ex').hidden = b.dataset.fmode !== 'ex'; $('#fit-data').hidden = b.dataset.fmode !== 'data';
+});
+function exoInit() { $('#exo-examples').innerHTML = EXO_EXAMPLES.map((x, i) => `<button type="button" class="chip" data-exo="${i}">${esc(x.label)}</button>`).join(''); }
+
 // ---------- Initialisation ----------
 (function initTabs() {
+  exoInit();
   const ls = $('#lang-select'); ls.value = LANG;
   ls.addEventListener('change', e => { const v = e.target.value; try { localStorage.setItem('atlas-lang', v); } catch (x) {} location.href = location.pathname + '?lang=' + v + location.hash; });
   fitExamplesInit();
