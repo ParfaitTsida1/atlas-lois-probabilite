@@ -1,0 +1,1787 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atlas des lois de probabilité</title>
+<style>:root{color-scheme:light}body{margin:0;font-size:14px}[hidden]{display:none!important}img{max-width:100%}</style>
+</head>
+<body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,500;0,700;1,500&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Mise en page : en-tête « cahier Seyès », colonne gauche collante (lois + paramètres), colonne droite qui défile (fiche de la loi). */
+:root {
+  --paper: #f6f7fa;
+  --surface: #ffffff;
+  --ink: #1a2232;
+  --muted: #5a6377;
+  --rule: #dce2ec;
+  --seyes: #c4d3f2;
+  --margin: #e28b8b;
+  --accent: #2341b5;
+  --accent-ink: #ffffff;
+  --accent-soft: #e4eafb;
+  --theory: #c7313b;
+  --hl: #f2c218;
+  --hl-soft: #fff4c4;
+  --ok: #1f7a4d;
+  --f-display: "Spectral", Georgia, "Times New Roman", serif;
+  --f-body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #10141d; --surface: #171c27; --ink: #e5e8f0; --muted: #9ba3b6; --rule: #2a3142;
+    --seyes: #24304b; --margin: #6e3440; --accent: #8fa6ff; --accent-ink: #0d1220; --accent-soft: #1d2747;
+    --theory: #ff7c85; --hl: #e3b51e; --hl-soft: #3a3214; --ok: #5cc78f; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #10141d; --surface: #171c27; --ink: #e5e8f0; --muted: #9ba3b6; --rule: #2a3142;
+  --seyes: #24304b; --margin: #6e3440; --accent: #8fa6ff; --accent-ink: #0d1220; --accent-soft: #1d2747;
+  --theory: #ff7c85; --hl: #e3b51e; --hl-soft: #3a3214; --ok: #5cc78f; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.55; }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 700; text-wrap: balance; margin: 0; line-height: 1.2; }
+h2 { font-size: 1.35rem; }
+h3 { font-size: 1.05rem; }
+p { margin: 0; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.num, .mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+/* En-tête */
+.top {
+  padding: 22px 16px 20px;
+  border-bottom: 1px solid var(--rule);
+  background:
+    linear-gradient(90deg, transparent 0 calc(16px + 2.2rem), var(--margin) calc(16px + 2.2rem) calc(16px + 2.2rem + 1.5px), transparent 0),
+    repeating-linear-gradient(180deg, transparent 0 23px, var(--seyes) 23px 24px),
+    var(--surface);
+}
+.top-inner { max-width: 1280px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: end; justify-content: space-between; padding-left: 3rem; }
+.brand h1 { font-size: clamp(1.6rem, 3.5vw, 2.3rem); }
+.brand p { color: var(--muted); }
+.parse { flex: 1 1 280px; min-width: 0; max-width: 560px; display: grid; gap: 6px; }
+.parse label { font-size: .8rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.parse-row { display: flex; gap: 8px; }
+.parse-row input { flex: 1; min-width: 0; padding: 10px 12px; border: 1.5px solid var(--rule); border-radius: 8px; background: var(--paper); font-family: var(--f-mono); font-size: .95rem; }
+.parse-row input:focus { border-color: var(--accent); outline: none; }
+.btn { border: 1.5px solid var(--accent); background: var(--accent); color: var(--accent-ink); border-radius: 8px; padding: 8px 14px; font-weight: 600; cursor: pointer; }
+.btn:hover { filter: brightness(1.08); }
+.btn.ghost { background: transparent; color: var(--accent); }
+.btn.ghost:hover { background: var(--accent-soft); }
+.btn[disabled] { opacity: .5; cursor: default; }
+#parse-msg { font-size: .9rem; min-height: 1.4em; color: var(--muted); }
+#parse-msg.err { color: var(--theory); }
+#parse-msg.ok { color: var(--ok); }
+
+/* Grille principale */
+.layout { max-width: 1280px; margin: 0 auto; padding: 24px 16px 64px; display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 28px; align-items: start; }
+.side { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); display: grid; gap: 18px; max-height: calc(100vh - 24px); overflow-y: auto; padding-bottom: 8px; }
+@media (max-width: 900px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .side { position: static; max-height: none; overflow: visible; }
+}
+.side-label { font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.nav { display: grid; gap: 4px; }
+@media (max-width: 900px) { .nav { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); } }
+.nav button { text-align: left; border: 1px solid transparent; background: transparent; border-radius: 8px; padding: 7px 10px; cursor: pointer; display: grid; gap: 0; }
+.nav button:hover { background: var(--accent-soft); }
+.nav button[aria-current="true"] { background: var(--surface); border-color: var(--rule); box-shadow: inset 3px 0 0 var(--accent); }
+.nav .n-name { font-weight: 700; }
+.nav .n-tag { font-size: .82rem; color: var(--muted); }
+.soon { font-size: .82rem; color: var(--muted); padding: 4px 10px; }
+
+.panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 16px; }
+.param { display: grid; gap: 4px; }
+.param + .param { margin-top: 14px; }
+.param-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.param-head label { font-weight: 600; font-size: .93rem; }
+.param-head .sym { font-family: var(--f-display); font-style: italic; font-size: 1.05rem; }
+.param-row { display: flex; gap: 10px; align-items: center; }
+.param-row input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent); }
+.param-row input[type=number] { width: 86px; padding: 4px 6px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); font-family: var(--f-mono); font-size: .9rem; }
+.notation { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--rule); font-family: var(--f-display); font-size: 1.15rem; }
+
+/* Contenu */
+main { display: grid; gap: 28px; min-width: 0; }
+section { min-width: 0; }
+.sec-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 16px; margin-bottom: 12px; }
+.sec-head p { color: var(--muted); font-size: .92rem; }
+.eyebrow { font-size: .78rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.hero h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); margin: 4px 0 10px; }
+.hero .lede { font-size: 1.08rem; max-width: 68ch; }
+.hero-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 16px; }
+.hero-grid > div { border-left: 3px solid var(--accent-soft); padding: 2px 0 2px 12px; }
+.hero-grid h3 { font-family: var(--f-body); font-size: .8rem; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 12px; background: var(--surface); }
+table.carac { width: 100%; border-collapse: collapse; min-width: 560px; }
+.carac th, .carac td { padding: 10px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--rule); }
+.carac tr:last-child th, .carac tr:last-child td { border-bottom: 0; }
+.carac th { font-weight: 600; width: 24%; }
+.carac th small { display: block; font-weight: 400; color: var(--muted); font-size: .8rem; }
+.carac td.f { font-family: var(--f-display); font-size: 1.02rem; }
+.carac td.v { font-family: var(--f-mono); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; width: 18%; }
+.bn { display: inline-flex; align-items: center; vertical-align: middle; }
+.bn > i { font-style: normal; font-size: 1.7em; font-weight: 300; line-height: 1; }
+.bn-s { display: inline-flex; flex-direction: column; font-size: .78em; line-height: 1.1; text-align: center; margin: 0 .08em; }
+.math { font-family: var(--f-display); }
+var { font-style: italic; font-family: var(--f-display); }
+
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+.chart-card { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 14px 14px 8px; min-width: 0; }
+.chart-card h3 { margin-bottom: 2px; }
+.chart-card .cap { font-size: .85rem; color: var(--muted); margin-bottom: 6px; }
+.chart-card svg { width: 100%; height: auto; display: block; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .82rem; color: var(--muted); padding: 4px 0; }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; background: var(--c); }
+.legend .dot::before { border-radius: 50%; }
+.chart-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: .88rem; }
+.chart-tools select { padding: 4px 8px; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+
+svg .ax { stroke: var(--rule); stroke-width: 1; }
+svg .ax0 { stroke: var(--muted); stroke-width: 1; }
+svg .tk { fill: var(--muted); font-family: var(--f-mono); font-size: 11px; }
+svg .lbl { fill: var(--muted); font-family: var(--f-body); font-size: 12px; }
+svg .bar { fill: var(--accent); }
+svg .bar.dim { opacity: .28; }
+svg .bar.hl { fill: var(--hl); }
+svg .emp { fill: var(--accent); opacity: .85; }
+svg .th-pt { fill: var(--theory); }
+svg .th-tick { stroke: var(--theory); stroke-width: 2; }
+svg .ov-pt { fill: none; stroke: var(--ok); stroke-width: 2; }
+svg .ov-line { fill: none; stroke: var(--ok); stroke-width: 2; }
+svg .step { stroke: var(--accent); stroke-width: 2.2; fill: none; }
+svg .step-dot { fill: var(--accent); }
+svg .step-open { fill: var(--surface); stroke: var(--accent); stroke-width: 1.6; }
+svg .mean-line { stroke: var(--theory); stroke-width: 1.6; stroke-dasharray: 5 4; }
+svg .band { fill: var(--theory); opacity: .1; }
+svg .run { fill: none; stroke: var(--accent); stroke-width: 1.8; }
+svg .dens-area { fill: var(--accent); opacity: .12; }
+svg .dens-hl { fill: var(--hl); opacity: .75; }
+svg .dens-line { fill: none; stroke: var(--accent); stroke-width: 2.2; }
+svg .th-line { fill: none; stroke: var(--theory); stroke-width: 2; }
+svg .guide { fill: none; stroke: var(--hl); stroke-width: 1.6; stroke-dasharray: 4 3; }
+svg .guide-dot { fill: var(--hl); }
+
+.calc { display: grid; gap: 14px; }
+.calc-form { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.calc-form select, .calc-form input { padding: 7px 10px; border: 1px solid var(--rule); border-radius: 8px; background: var(--paper); }
+.calc-form input { width: 90px; font-family: var(--f-mono); }
+.calc-out { display: grid; gap: 6px; }
+.calc-big { font-family: var(--f-display); font-size: 1.6rem; }
+.calc-big b { font-family: var(--f-mono); font-weight: 600; background: var(--hl-soft); padding: 0 .25em; border-radius: 4px; }
+.calc-detail { color: var(--muted); font-size: .95rem; overflow-x: auto; }
+.calc-detail .math { color: var(--ink); }
+
+.sim-controls { display: flex; flex-wrap: wrap; gap: 8px; }
+.mech { background: var(--accent-soft); border-radius: 10px; padding: 12px 14px; font-size: .95rem; }
+.last { font-size: .95rem; min-height: 1.6em; overflow-wrap: anywhere; }
+.last .tr { font-family: var(--f-mono); letter-spacing: .04em; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.stat { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 10px 12px; }
+.stat .k { font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.stat .v { font-family: var(--f-mono); font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.stat .t { font-size: .85rem; color: var(--muted); }
+.stat .t b { color: var(--theory); font-weight: 600; font-family: var(--f-mono); }
+
+.examples { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.ex { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 16px; display: grid; gap: 10px; align-content: start; }
+.ex .q { font-weight: 600; }
+.ex .ans { font-family: var(--f-display); font-size: 1.05rem; }
+.ex .ans b { font-family: var(--f-mono); background: var(--hl-soft); padding: 0 .25em; border-radius: 4px; }
+.ex .btn { justify-self: start; }
+
+.props { display: grid; gap: 10px; padding-left: 1.2em; margin: 0; max-width: 78ch; }
+.props li::marker { color: var(--accent); }
+.note { font-size: .88rem; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+@media (max-width: 640px) {
+  .top { background:
+    linear-gradient(90deg, transparent 0 calc(16px + 1rem), var(--margin) calc(16px + 1rem) calc(16px + 1rem + 1.5px), transparent 0),
+    repeating-linear-gradient(180deg, transparent 0 23px, var(--seyes) 23px 24px), var(--surface); }
+  .top-inner { padding-left: 1.6rem; }
+  table.carac { min-width: 0; }
+  .carac, .carac tbody, .carac tr, .carac th, .carac td { display: block; width: auto !important; }
+  .carac tr { padding: 10px 14px; border-bottom: 1px solid var(--rule); }
+  .carac tr:last-child { border-bottom: 0; }
+  .carac th, .carac td { padding: 2px 0; border: 0; }
+  .carac td.v { text-align: left; white-space: normal; color: var(--accent); }
+}
+</style>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <h1>Atlas des lois de probabilité</h1>
+      <p>Lois discrètes et continues : caractéristiques, graphiques et simulations.</p>
+    </div>
+    <form class="parse" id="parse-form" autocomplete="off">
+      <label for="law-input">Entrez une loi</label>
+      <div class="parse-row">
+        <input id="law-input" type="text" placeholder="ex. B(20 ; 0,3) · Poisson(4) · N(100 ; 225) · khi2(5)" spellcheck="false">
+        <button class="btn" type="submit">Analyser</button>
+      </div>
+      <p id="parse-msg" aria-live="polite">Écrivez le nom ou la notation d'une loi avec ses paramètres, ou choisissez-la dans la liste.</p>
+    </form>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="side">
+    <div>
+      <div class="side-label">Lois discrètes</div>
+      <div class="nav" id="nav-d"></div>
+    </div>
+    <div>
+      <div class="side-label">Lois continues</div>
+      <div class="nav" id="nav-c"></div>
+    </div>
+    <div class="panel">
+      <div class="side-label">Paramètres</div>
+      <div id="params"></div>
+      <div class="notation" id="notation"></div>
+    </div>
+  </aside>
+
+  <main>
+    <section class="hero" id="hero"></section>
+
+    <section>
+      <div class="sec-head"><h2>Caractéristiques</h2><p>Formules générales et valeurs pour les paramètres choisis.</p></div>
+      <div class="table-wrap"><table class="carac" id="carac"></table></div>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>Graphiques</h2>
+        <div class="chart-tools" id="overlay-tools"></div>
+      </div>
+      <div class="grid2">
+        <div class="chart-card">
+          <h3 id="pmf-title">Loi de probabilité</h3>
+          <p class="cap" id="pmf-cap">Hauteur de chaque bâton : <span class="math">P(X = k)</span>. Les bâtons surlignés correspondent à l'événement calculé plus bas.</p>
+          <div id="chart-pmf"></div>
+          <div class="legend" id="legend-pmf"></div>
+        </div>
+        <div class="chart-card">
+          <h3>Fonction de répartition</h3>
+          <p class="cap" id="cdf-cap"><span class="math">F(x) = P(X ≤ x)</span> : une fonction en escalier qui saute de <span class="math">P(X = k)</span> en chaque valeur <span class="math">k</span>.</p>
+          <div id="chart-cdf"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="calc">
+      <div class="sec-head"><h2>Calculer une probabilité</h2></div>
+      <div class="panel calc">
+        <div class="calc-form">
+          <label for="calc-type" class="note">Événement</label>
+          <select id="calc-type">
+            <option value="eq">P(X = k)</option>
+            <option value="le">P(X ≤ k)</option>
+            <option value="lt">P(X &lt; k)</option>
+            <option value="ge">P(X ≥ k)</option>
+            <option value="gt">P(X &gt; k)</option>
+            <option value="between">P(a ≤ X ≤ b)</option>
+          </select>
+          <label for="calc-a" class="note" id="calc-a-lbl">k =</label>
+          <input id="calc-a" type="number" step="1" value="3">
+          <label for="calc-b" class="note" id="calc-b-lbl" hidden>b =</label>
+          <input id="calc-b" type="number" step="1" value="6" hidden>
+        </div>
+        <div class="calc-out" id="calc-out"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>Simulation</h2><p>On répète l'expérience aléatoire et on compare les fréquences observées à la loi théorique.</p></div>
+      <div style="display:grid;gap:14px">
+        <div class="mech" id="mech"></div>
+        <div class="sim-controls">
+          <button class="btn" type="button" data-draw="1">1 tirage</button>
+          <button class="btn" type="button" data-draw="100">+ 100</button>
+          <button class="btn" type="button" data-draw="1000">+ 1 000</button>
+          <button class="btn ghost" type="button" id="sim-anim">Animer 5 000 tirages</button>
+          <button class="btn ghost" type="button" id="sim-reset">Réinitialiser</button>
+        </div>
+        <p class="last" id="sim-last"></p>
+        <div class="stats" id="sim-stats"></div>
+        <div class="grid2">
+          <div class="chart-card">
+            <h3 id="sim-title">Fréquences observées</h3>
+            <p class="cap" id="sim-cap">Barres : fréquences des tirages. Traits rouges : probabilités théoriques.</p>
+            <div id="chart-sim"></div>
+          </div>
+          <div class="chart-card">
+            <h3>Moyenne des tirages</h3>
+            <p class="cap">Loi des grands nombres : la moyenne observée se rapproche de <span class="math">E(X)</span>. La bande rouge est la zone <span class="math">E(X) ± 1,96 σ/√n</span>.</p>
+            <div id="chart-run"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>Exemples concrets</h2><p>Cliquez sur « Charger » pour régler les paramètres et le calcul sur l'exemple.</p></div>
+      <div class="examples" id="examples"></div>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>Propriétés et liens avec d'autres lois</h2></div>
+      <ul class="props" id="props"></ul>
+    </section>
+  </main>
+</div>
+
+<script id="math">
+// ---------- Outils numériques ----------
+const LF = [0];
+function logFact(n) { for (let i = LF.length; i <= n; i++) LF[i] = LF[i - 1] + Math.log(i); return LF[n]; }
+function lchoose(n, k) { return (k < 0 || k > n) ? -Infinity : logFact(n) - logFact(k) - logFact(n - k); }
+function choose(n, k) { if (k < 0 || k > n) return 0; const v = Math.exp(lchoose(n, k)); return v < 1e15 ? Math.round(v) : v; }
+
+function fmt(x, d = 4) {
+  if (x === Infinity) return '+∞';
+  if (typeof x !== 'number' || !isFinite(x)) return '—';
+  const a = Math.abs(x);
+  if (x !== 0 && (a < 1e-4 || a >= 1e12)) {
+    let e = Math.floor(Math.log10(a)); let m = x / 10 ** e;
+    if (Math.abs(m) >= 9.995) { m /= 10; e += 1; }
+    return `${m.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} × 10<sup>${e}</sup>`;
+  }
+  return x.toLocaleString('fr-FR', { maximumFractionDigits: d });
+}
+function fmtTxt(x, d = 4) { return fmt(x, d).replace(/ × 10<sup>(-?\d+)<\/sup>/, 'e$1'); }
+const bin = (n, k) => `<span class="bn"><i>(</i><span class="bn-s"><span>${n}</span><span>${k}</span></span><i>)</i></span>`;
+const pw = (b, e) => `${b}<sup>${e}</sup>`;
+const par = s => /^[\d,]+$/.test(s) ? s : `(${s})`;
+
+// ---------- Les lois ----------
+const LAWS = [
+{
+  id: 'bernoulli', name: 'Bernoulli', tag: 'Une épreuve, deux issues',
+  params: [{ key: 'p', label: 'Probabilité de succès', sym: 'p', min: 0, max: 1, step: 0.01, value: 0.3 }],
+  notation: P => `𝓑(${fmt(P.p)})`,
+  variable: '<var>X</var> = 1 si l\'épreuve est un succès, 0 sinon.',
+  lede: 'La loi la plus simple : une seule expérience aléatoire qui réussit avec la probabilité <var>p</var> et échoue sinon. Elle sert de brique de base à presque toutes les autres lois discrètes.',
+  when: 'Pile ou face, une pièce défectueuse ou non, un client qui achète ou non : toute question à réponse oui/non.',
+  support: () => ({ min: 0, max: 1 }),
+  supportTxt: () => '{0, 1}',
+  pmf: (k, P) => k === 1 ? P.p : k === 0 ? 1 - P.p : 0,
+  mean: P => P.p, variance: P => P.p * (1 - P.p),
+  F: {
+    pmf: 'P(X = 1) = <var>p</var> &nbsp;et&nbsp; P(X = 0) = 1 − <var>p</var>',
+    cdf: 'F(x) = 0 si x &lt; 0 ; 1 − <var>p</var> si 0 ≤ x &lt; 1 ; 1 si x ≥ 1',
+    mean: 'E(X) = <var>p</var>', variance: 'V(X) = <var>p</var>(1 − <var>p</var>)',
+    pgf: 'G(s) = 1 − <var>p</var> + <var>p</var>s'
+  },
+  detail: (k, P) => k === 1 ? `P(X = 1) = p = ${fmt(P.p)}` : k === 0 ? `P(X = 0) = 1 − p = 1 − ${fmt(P.p)} = ${fmt(1 - P.p)}` : `${k} n'est pas dans le support {0, 1}, donc la probabilité est nulle.`,
+  mech: 'On tire un nombre <var>U</var> uniforme entre 0 et 1. Si <var>U</var> &lt; <var>p</var>, c\'est un succès (<var>X</var> = 1), sinon un échec (<var>X</var> = 0).',
+  sample(P, t) { const u = Math.random(); const x = u < P.p ? 1 : 0; if (t) t.html = `U = ${fmt(u, 3)} ${x ? '&lt;' : '≥'} p → <b>${x ? 'succès' : 'échec'}</b>`; return x; },
+  overlays: [],
+  examples: [
+    { title: 'Pile ou face', text: 'On lance une pièce équilibrée et on note <var>X</var> = 1 si l\'on obtient pile.', params: { p: 0.5 }, q: { type: 'eq', a: 1 }, ask: 'Probabilité d\'obtenir pile' },
+    { title: 'Pièce défectueuse', text: 'Une machine produit 3 % de pièces défectueuses. On prélève une pièce et on note <var>X</var> = 1 si elle est défectueuse.', params: { p: 0.03 }, q: { type: 'eq', a: 0 }, ask: 'Probabilité que la pièce soit conforme' }
+  ],
+  props: [
+    'La somme de <var>n</var> variables de Bernoulli 𝓑(<var>p</var>) indépendantes suit la loi binomiale 𝓑(<var>n</var> ; <var>p</var>).',
+    'Comme <var>X</var>² = <var>X</var>, on a E(<var>X</var>²) = <var>p</var>, d\'où V(<var>X</var>) = <var>p</var> − <var>p</var>² = <var>p</var>(1 − <var>p</var>).',
+    'La variance est maximale pour <var>p</var> = 0,5 (elle vaut alors 0,25) : c\'est la situation la plus incertaine.',
+    'Les lois géométrique et de Pascal comptent le nombre d\'épreuves de Bernoulli nécessaires pour obtenir un ou plusieurs succès.'
+  ]
+},
+{
+  id: 'binomial', name: 'Binomiale', tag: 'Nombre de succès sur n essais',
+  params: [
+    { key: 'n', label: 'Nombre d\'épreuves', sym: 'n', min: 1, max: 200, step: 1, value: 20, int: true },
+    { key: 'p', label: 'Probabilité de succès', sym: 'p', min: 0, max: 1, step: 0.01, value: 0.3 }
+  ],
+  notation: P => `𝓑(${P.n} ; ${fmt(P.p)})`,
+  variable: '<var>X</var> = nombre de succès obtenus en <var>n</var> épreuves de Bernoulli indépendantes et identiques.',
+  lede: 'On répète <var>n</var> fois, de façon indépendante, une même épreuve à deux issues dont la probabilité de succès est <var>p</var>. La loi binomiale donne la probabilité d\'obtenir exactement <var>k</var> succès.',
+  when: 'Nombre de bonnes réponses à un QCM rempli au hasard, nombre de pièces défectueuses dans un lot (tirage avec remise), nombre de clients qui achètent parmi <var>n</var> visiteurs.',
+  support: P => ({ min: 0, max: P.n }),
+  supportTxt: P => `{0, 1, …, ${P.n}}`,
+  pmf: (k, P) => (k < 0 || k > P.n) ? 0 : Math.exp(lchoose(P.n, k)) * P.p ** k * (1 - P.p) ** (P.n - k),
+  mean: P => P.n * P.p, variance: P => P.n * P.p * (1 - P.p),
+  F: {
+    pmf: `P(X = k) = ${bin('<var>n</var>', '<var>k</var>')} <var>p</var><sup>k</sup> (1 − <var>p</var>)<sup>n − k</sup>`,
+    cdf: 'F(x) = Σ<sub>k ≤ x</sub> P(X = k) &nbsp;(pas de forme simple)',
+    mean: 'E(X) = <var>np</var>', variance: 'V(X) = <var>np</var>(1 − <var>p</var>)',
+    pgf: 'G(s) = (1 − <var>p</var> + <var>p</var>s)<sup>n</sup>'
+  },
+  detail(k, P) {
+    if (k < 0 || k > P.n) return `${k} n'est pas dans le support, donc la probabilité est nulle.`;
+    const q = 1 - P.p;
+    return `P(X = ${k}) = ${bin(P.n, k)} × ${pw(par(fmt(P.p)), k)} × ${pw(par(fmt(q)), P.n - k)} = ${fmt(choose(P.n, k))} × ${fmt(P.p ** k, 6)} × ${fmt(q ** (P.n - k), 6)}`;
+  },
+  mech: 'On lance <var>n</var> fois une pièce truquée qui tombe sur « succès » avec la probabilité <var>p</var>, puis on compte les succès. ● = succès, ○ = échec.',
+  sample(P, t) {
+    let x = 0, s = '';
+    for (let i = 0; i < P.n; i++) { const w = Math.random() < P.p; x += w; if (t && i < 60) s += w ? '●' : '○'; }
+    if (t) t.html = `<span class="tr">${s}${P.n > 60 ? '…' : ''}</span> → <b>X = ${x}</b> succès`;
+    return x;
+  },
+  overlays: [
+    { id: 'poisson', label: 'Approximation de Poisson 𝓟(np)', kind: 'points', fn: P => k => Math.exp(-P.n * P.p + k * Math.log(P.n * P.p) - logFact(k)) },
+    { id: 'normal', label: 'Approximation normale 𝓝(np ; np(1−p))', kind: 'line', fn: P => normalDensity(P.n * P.p, Math.sqrt(P.n * P.p * (1 - P.p))) }
+  ],
+  examples: [
+    { title: 'QCM au hasard', text: 'Un QCM comporte 10 questions à 4 choix. Un élève répond entièrement au hasard. <var>X</var> = nombre de bonnes réponses suit 𝓑(10 ; 0,25).', params: { n: 10, p: 0.25 }, q: { type: 'ge', a: 5 }, ask: 'Probabilité d\'avoir au moins la moyenne (5 bonnes réponses ou plus)' },
+    { title: 'Contrôle qualité', text: 'Une usine produit 5 % de pièces défectueuses. On prélève 20 pièces (production assez grande pour assimiler le prélèvement à un tirage avec remise).', params: { n: 20, p: 0.05 }, q: { type: 'le', a: 1 }, ask: 'Probabilité d\'avoir au plus une pièce défectueuse' }
+  ],
+  props: [
+    'Si <var>X</var> ∼ 𝓑(<var>n</var>₁ ; <var>p</var>) et <var>Y</var> ∼ 𝓑(<var>n</var>₂ ; <var>p</var>) sont indépendantes, alors <var>X</var> + <var>Y</var> ∼ 𝓑(<var>n</var>₁ + <var>n</var>₂ ; <var>p</var>).',
+    'Symétrie : si <var>X</var> ∼ 𝓑(<var>n</var> ; <var>p</var>), le nombre d\'échecs <var>n</var> − <var>X</var> suit 𝓑(<var>n</var> ; 1 − <var>p</var>).',
+    'Approximation de Poisson : quand <var>n</var> est grand et <var>p</var> petit (règle usuelle : <var>n</var> ≥ 30, <var>p</var> ≤ 0,1), 𝓑(<var>n</var> ; <var>p</var>) ≈ 𝓟(<var>np</var>). Activez la superposition dans les graphiques pour le voir.',
+    'Approximation normale : quand <var>np</var> ≥ 5 et <var>n</var>(1 − <var>p</var>) ≥ 5, la loi ressemble à une courbe en cloche 𝓝(<var>np</var> ; <var>np</var>(1 − <var>p</var>)).',
+    'Le mode est l\'entier ⌊(<var>n</var> + 1)<var>p</var>⌋ (deux modes quand (<var>n</var> + 1)<var>p</var> est entier).'
+  ]
+},
+{
+  id: 'geometric', name: 'Géométrique', tag: 'Attente du premier succès',
+  params: [{ key: 'p', label: 'Probabilité de succès', sym: 'p', min: 0.02, max: 1, step: 0.01, value: 0.2 }],
+  notation: P => `𝓖(${fmt(P.p)})`,
+  variable: '<var>X</var> = rang de l\'épreuve qui donne le premier succès (nombre d\'essais nécessaires).',
+  lede: 'On répète une épreuve de Bernoulli jusqu\'au premier succès. La loi géométrique décrit le nombre d\'essais nécessaires. C\'est la loi de l\'attente dans un monde discret.',
+  when: 'Nombre de lancers de dé pour obtenir un 6, nombre d\'appels avant une vente, nombre de tentatives avant la première réussite.',
+  support: () => ({ min: 1, max: Infinity }),
+  supportTxt: () => 'ℕ* = {1, 2, 3, …}',
+  pmf: (k, P) => k < 1 ? 0 : (1 - P.p) ** (k - 1) * P.p,
+  mean: P => 1 / P.p, variance: P => (1 - P.p) / P.p ** 2,
+  F: {
+    pmf: 'P(X = k) = (1 − <var>p</var>)<sup>k − 1</sup> <var>p</var>',
+    cdf: 'F(k) = 1 − (1 − <var>p</var>)<sup>k</sup> pour k entier ≥ 1',
+    mean: 'E(X) = 1 / <var>p</var>', variance: 'V(X) = (1 − <var>p</var>) / <var>p</var>²',
+    pgf: 'G(s) = <var>p</var>s / (1 − (1 − <var>p</var>)s)'
+  },
+  detail: (k, P) => k < 1 ? `${k} n'est pas dans le support, donc la probabilité est nulle.` : `P(X = ${k}) = ${pw(par(fmt(1 - P.p)), k - 1)} × ${fmt(P.p)}`,
+  closed(type, a, P) {
+    const q = 1 - P.p;
+    if (type === 'le' && a >= 1) return `P(X ≤ ${a}) = 1 − ${pw(par(fmt(q)), a)}`;
+    if (type === 'gt' && a >= 0) return `P(X &gt; ${a}) = ${pw(par(fmt(q)), a)} &nbsp;(les ${a} premiers essais sont des échecs)`;
+    if (type === 'ge' && a >= 1) return `P(X ≥ ${a}) = ${pw(par(fmt(q)), a - 1)} &nbsp;(les ${a - 1} premiers essais sont des échecs)`;
+    return null;
+  },
+  mech: 'On répète l\'épreuve de Bernoulli jusqu\'au premier succès et on compte le nombre d\'essais. ○ = échec, ● = succès.',
+  sample(P, t) {
+    let x = 0, s = '';
+    while (true) { x++; const w = Math.random() < P.p; if (t && x <= 60) s += w ? '●' : '○'; if (w) break; }
+    if (t) t.html = `<span class="tr">${s}${x > 60 ? '…' : ''}</span> → <b>X = ${x}</b> (premier succès au ${x}<sup>e</sup> essai)`;
+    return x;
+  },
+  overlays: [],
+  examples: [
+    { title: 'Attendre un 6', text: 'On lance un dé équilibré jusqu\'à obtenir un 6. <var>X</var> = nombre de lancers suit 𝓖(1/6).', params: { p: 1 / 6 }, q: { type: 'le', a: 6 }, ask: 'Probabilité d\'obtenir le 6 en au plus 6 lancers' },
+    { title: 'Prospection commerciale', text: 'Un commercial conclut une vente à chaque appel avec la probabilité 0,2, indépendamment des autres appels.', params: { p: 0.2 }, q: { type: 'gt', a: 5 }, ask: 'Probabilité qu\'il faille plus de 5 appels pour la première vente' }
+  ],
+  props: [
+    'Absence de mémoire : P(<var>X</var> &gt; <var>m</var> + <var>n</var> | <var>X</var> &gt; <var>m</var>) = P(<var>X</var> &gt; <var>n</var>). Avoir déjà échoué ne rapproche pas du succès. C\'est la seule loi discrète qui a cette propriété.',
+    'Variante : certains cours comptent le nombre d\'échecs avant le premier succès, <var>Y</var> = <var>X</var> − 1, à valeurs dans ℕ, avec E(<var>Y</var>) = (1 − <var>p</var>)/<var>p</var>.',
+    'C\'est la loi de Pascal avec <var>r</var> = 1, et l\'équivalent discret de la loi exponentielle.',
+    'Le mode vaut toujours 1 : le premier essai est le rang le plus probable pour le premier succès.'
+  ]
+},
+{
+  id: 'poisson', name: 'Poisson', tag: 'Événements rares dans un intervalle',
+  params: [{ key: 'lambda', label: 'Nombre moyen d\'événements', sym: 'λ', min: 0.1, max: 50, step: 0.1, value: 4 }],
+  notation: P => `𝓟(${fmt(P.lambda)})`,
+  variable: '<var>X</var> = nombre d\'événements survenant dans un intervalle de temps ou d\'espace donné.',
+  lede: 'La loi de Poisson compte des événements qui arrivent au hasard, indépendamment les uns des autres, à un rythme moyen λ constant. Sa particularité : son espérance et sa variance sont égales à λ.',
+  when: 'Nombre d\'appels reçus par minute, de clients arrivant en une heure, de fautes de frappe par page, de pannes par mois.',
+  support: () => ({ min: 0, max: Infinity }),
+  supportTxt: () => 'ℕ = {0, 1, 2, …}',
+  pmf: (k, P) => k < 0 ? 0 : Math.exp(-P.lambda + k * Math.log(P.lambda) - logFact(k)),
+  mean: P => P.lambda, variance: P => P.lambda,
+  F: {
+    pmf: 'P(X = k) = e<sup>−λ</sup> λ<sup>k</sup> / k!',
+    cdf: 'F(x) = e<sup>−λ</sup> Σ<sub>k ≤ x</sub> λ<sup>k</sup> / k!',
+    mean: 'E(X) = λ', variance: 'V(X) = λ',
+    pgf: 'G(s) = e<sup>λ(s − 1)</sup>'
+  },
+  detail: (k, P) => k < 0 ? `${k} n'est pas dans le support, donc la probabilité est nulle.` : `P(X = ${k}) = e<sup>−${fmt(P.lambda)}</sup> × ${pw(fmt(P.lambda), k)} / ${k}! = ${fmt(Math.exp(-P.lambda), 6)} × ${fmt(P.lambda ** k)} / ${fmt(Math.exp(logFact(k)))}`,
+  mech: 'On simule les instants d\'arrivée d\'événements aléatoires sur un intervalle de durée 1 (les écarts entre deux arrivées suivent une loi exponentielle de paramètre λ) et on compte combien tombent dans l\'intervalle.',
+  sample(P, t) {
+    let s = 0, x = 0; const times = [];
+    while (true) { s += -Math.log(1 - Math.random()) / P.lambda; if (s > 1) break; x++; if (t && times.length < 12) times.push(fmt(s, 2)); }
+    if (t) t.html = `Arrivées aux instants <span class="tr">${times.length ? times.join(' ; ') : 'aucune'}${x > 12 ? ' ; …' : ''}</span> → <b>X = ${x}</b> événement${x > 1 ? 's' : ''}`;
+    return x;
+  },
+  overlays: [
+    { id: 'normal', label: 'Approximation normale 𝓝(λ ; λ)', kind: 'line', fn: P => normalDensity(P.lambda, Math.sqrt(P.lambda)) }
+  ],
+  examples: [
+    { title: 'Standard téléphonique', text: 'Un standard reçoit en moyenne 4 appels par minute. Le nombre d\'appels <var>X</var> en une minute suit 𝓟(4).', params: { lambda: 4 }, q: { type: 'ge', a: 8 }, ask: 'Probabilité de recevoir au moins 8 appels en une minute (saturation)' },
+    { title: 'Coquilles dans un livre', text: 'Un livre contient en moyenne 1,5 faute de frappe par page.', params: { lambda: 1.5 }, q: { type: 'eq', a: 0 }, ask: 'Probabilité qu\'une page ne contienne aucune faute' }
+  ],
+  props: [
+    'Si <var>X</var> ∼ 𝓟(λ) et <var>Y</var> ∼ 𝓟(μ) sont indépendantes, alors <var>X</var> + <var>Y</var> ∼ 𝓟(λ + μ).',
+    'Limite de la binomiale : 𝓑(<var>n</var> ; λ/<var>n</var>) tend vers 𝓟(λ) quand <var>n</var> → ∞. C\'est pourquoi on l\'appelle la loi des événements rares.',
+    'Pour λ grand (λ ≥ 20 environ), 𝓟(λ) est proche de la loi normale 𝓝(λ ; λ).',
+    'Lien avec le temps : si les événements arrivent selon une loi de Poisson, la durée entre deux événements suit une loi exponentielle (loi continue, à venir).',
+    'Le mode est ⌊λ⌋ ; si λ est entier, λ − 1 et λ sont tous deux des modes.'
+  ]
+},
+{
+  id: 'hypergeometric', name: 'Hypergéométrique', tag: 'Tirages sans remise',
+  params: [
+    { key: 'N', label: 'Taille de la population', sym: 'N', min: 2, max: 200, step: 1, value: 50, int: true },
+    { key: 'K', label: 'Nombre d\'individus « succès »', sym: 'K', min: 0, max: P => P.N, step: 1, value: 10, int: true },
+    { key: 'n', label: 'Taille de l\'échantillon', sym: 'n', min: 1, max: P => P.N, step: 1, value: 8, int: true }
+  ],
+  notation: P => `𝓗(${P.N} ; ${P.K} ; ${P.n})`,
+  variable: '<var>X</var> = nombre d\'individus « succès » dans un échantillon de <var>n</var> individus tirés sans remise.',
+  lede: 'Une urne contient <var>N</var> boules dont <var>K</var> rouges. On en tire <var>n</var> d\'un coup, sans remise. La loi hypergéométrique donne la probabilité d\'obtenir <var>k</var> boules rouges. Les tirages ne sont pas indépendants : chaque tirage modifie la composition de l\'urne.',
+  when: 'Contrôle de qualité sur un petit lot, jeux de loto, cartes tirées d\'un jeu, sondage dans une petite population.',
+  constrain(P) { P.K = Math.min(P.K, P.N); P.n = Math.min(Math.max(P.n, 1), P.N); return P; },
+  support: P => ({ min: Math.max(0, P.n - (P.N - P.K)), max: Math.min(P.n, P.K) }),
+  supportTxt: P => `{${Math.max(0, P.n - (P.N - P.K))}, …, ${Math.min(P.n, P.K)}}`,
+  pmf: (k, P) => Math.exp(lchoose(P.K, k) + lchoose(P.N - P.K, P.n - k) - lchoose(P.N, P.n)),
+  mean: P => P.n * P.K / P.N,
+  variance: P => P.N > 1 ? P.n * (P.K / P.N) * (1 - P.K / P.N) * (P.N - P.n) / (P.N - 1) : 0,
+  F: {
+    pmf: `P(X = k) = ${bin('<var>K</var>', '<var>k</var>')} ${bin('<var>N</var> − <var>K</var>', '<var>n</var> − <var>k</var>')} / ${bin('<var>N</var>', '<var>n</var>')}`,
+    cdf: 'F(x) = Σ<sub>k ≤ x</sub> P(X = k) &nbsp;(pas de forme simple)',
+    mean: 'E(X) = <var>n</var> · <var>K</var>/<var>N</var>',
+    variance: 'V(X) = <var>n</var> · <var>K</var>/<var>N</var> · (1 − <var>K</var>/<var>N</var>) · (<var>N</var> − <var>n</var>)/(<var>N</var> − 1)',
+    pgf: 'Pas de forme simple (s\'exprime avec la fonction hypergéométrique ₂F₁, d\'où le nom de la loi)'
+  },
+  detail(k, P) {
+    const s = this.support(P);
+    if (k < s.min || k > s.max) return `${k} n'est pas dans le support, donc la probabilité est nulle.`;
+    return `P(X = ${k}) = ${bin(P.K, k)} × ${bin(P.N - P.K, P.n - k)} / ${bin(P.N, P.n)} = ${fmt(choose(P.K, k))} × ${fmt(choose(P.N - P.K, P.n - k))} / ${fmt(choose(P.N, P.n))}`;
+  },
+  mech: 'On tire <var>n</var> boules une à une, sans remise, dans une urne de <var>N</var> boules dont <var>K</var> rouges, puis on compte les rouges. ● = rouge, ○ = autre.',
+  sample(P, t) {
+    let red = P.K, tot = P.N, x = 0, s = '';
+    for (let i = 0; i < P.n; i++) { const w = Math.random() < red / tot; if (w) { x++; red--; } tot--; if (t && i < 60) s += w ? '●' : '○'; }
+    if (t) t.html = `<span class="tr">${s}${P.n > 60 ? '…' : ''}</span> → <b>X = ${x}</b> boule${x > 1 ? 's' : ''} rouge${x > 1 ? 's' : ''}`;
+    return x;
+  },
+  overlays: [
+    { id: 'binom', label: 'Approximation binomiale 𝓑(n ; K/N)', kind: 'points', fn: P => k => (k < 0 || k > P.n) ? 0 : Math.exp(lchoose(P.n, k)) * (P.K / P.N) ** k * (1 - P.K / P.N) ** (P.n - k) }
+  ],
+  examples: [
+    { title: 'Loto', text: 'On coche 6 numéros parmi 49 ; le tirage désigne 6 numéros gagnants. <var>X</var> = nombre de bons numéros suit 𝓗(49 ; 6 ; 6).', params: { N: 49, K: 6, n: 6 }, q: { type: 'ge', a: 3 }, ask: 'Probabilité d\'avoir au moins 3 bons numéros' },
+    { title: 'Lot de pièces', text: 'Un lot de 50 pièces contient 4 pièces défectueuses. Un contrôleur en prélève 10 sans remise.', params: { N: 50, K: 4, n: 10 }, q: { type: 'ge', a: 1 }, ask: 'Probabilité de détecter au moins une pièce défectueuse' }
+  ],
+  props: [
+    'Notation alternative fréquente : 𝓗(<var>N</var> ; <var>n</var> ; <var>p</var>) avec <var>p</var> = <var>K</var>/<var>N</var>. Ici on utilise directement le nombre <var>K</var> de succès.',
+    'L\'espérance est la même qu\'avec remise (<var>n</var> · <var>K</var>/<var>N</var>), mais la variance est multipliée par le facteur d\'exhaustivité (<var>N</var> − <var>n</var>)/(<var>N</var> − 1) &lt; 1 : tirer sans remise réduit la dispersion.',
+    'Approximation binomiale : quand l\'échantillon est petit devant la population (règle usuelle : <var>n</var>/<var>N</var> ≤ 0,1), 𝓗(<var>N</var> ; <var>K</var> ; <var>n</var>) ≈ 𝓑(<var>n</var> ; <var>K</var>/<var>N</var>). Activez la superposition pour comparer.',
+    'Le support est limité : on ne peut pas tirer plus de rouges qu\'il n\'y en a (<var>k</var> ≤ <var>K</var>) ni plus d\'autres boules qu\'il n\'y en a (<var>n</var> − <var>k</var> ≤ <var>N</var> − <var>K</var>).'
+  ]
+},
+{
+  id: 'uniform', name: 'Uniforme discrète', tag: 'Toutes les valeurs équiprobables',
+  params: [
+    { key: 'a', label: 'Plus petite valeur', sym: 'a', min: -20, max: 100, step: 1, value: 1, int: true },
+    { key: 'b', label: 'Plus grande valeur', sym: 'b', min: -20, max: 120, step: 1, value: 6, int: true }
+  ],
+  notation: P => `𝓤({${P.a}, …, ${P.b}})`,
+  variable: '<var>X</var> = valeur tirée au hasard parmi les entiers de <var>a</var> à <var>b</var>, chacun ayant la même chance.',
+  lede: 'Chacune des <var>n</var> = <var>b</var> − <var>a</var> + 1 valeurs entières entre <var>a</var> et <var>b</var> a la même probabilité 1/<var>n</var>. C\'est la loi de l\'équiprobabilité, celle des « cas favorables sur cas possibles ».',
+  when: 'Lancer d\'un dé équilibré, tirage d\'un numéro de loterie, choix aléatoire d\'un jour du mois, générateurs de nombres aléatoires.',
+  constrain(P) { if (P.b < P.a) P.b = P.a; return P; },
+  support: P => ({ min: P.a, max: P.b }),
+  supportTxt: P => `{${P.a}, ${P.a + 1}, …, ${P.b}}`,
+  pmf: (k, P) => (k < P.a || k > P.b) ? 0 : 1 / (P.b - P.a + 1),
+  mean: P => (P.a + P.b) / 2, variance: P => ((P.b - P.a + 1) ** 2 - 1) / 12,
+  F: {
+    pmf: 'P(X = k) = 1 / <var>n</var> &nbsp;avec <var>n</var> = <var>b</var> − <var>a</var> + 1',
+    cdf: 'F(k) = (k − <var>a</var> + 1) / <var>n</var> pour k entier entre <var>a</var> et <var>b</var>',
+    mean: 'E(X) = (<var>a</var> + <var>b</var>) / 2', variance: 'V(X) = (<var>n</var>² − 1) / 12',
+    pgf: 'G(s) = (s<sup>a</sup> − s<sup>b + 1</sup>) / (<var>n</var>(1 − s))'
+  },
+  detail: (k, P) => (k < P.a || k > P.b) ? `${k} n'est pas dans le support, donc la probabilité est nulle.` : `P(X = ${k}) = 1 / ${P.b - P.a + 1}`,
+  closed(type, a, P) {
+    const n = P.b - P.a + 1;
+    if (type === 'le' && a >= P.a && a <= P.b) return `P(X ≤ ${a}) = (${a} − ${par(String(P.a))} + 1) / ${n} = ${a - P.a + 1} / ${n}`;
+    return null;
+  },
+  mech: 'On tire un entier au hasard entre <var>a</var> et <var>b</var>, comme on lancerait un dé à <var>n</var> faces numérotées de <var>a</var> à <var>b</var>.',
+  sample(P, t) { const x = P.a + Math.floor(Math.random() * (P.b - P.a + 1)); if (t) t.html = `Dé à ${P.b - P.a + 1} face${P.b > P.a ? 's' : ''} → <b>X = ${x}</b>`; return x; },
+  overlays: [],
+  examples: [
+    { title: 'Dé équilibré', text: 'On lance un dé à six faces équilibré. <var>X</var> suit la loi uniforme sur {1, …, 6}.', params: { a: 1, b: 6 }, q: { type: 'ge', a: 5 }, ask: 'Probabilité d\'obtenir 5 ou 6' },
+    { title: 'Tombola', text: 'On tire au hasard un billet numéroté de 1 à 100.', params: { a: 1, b: 100 }, q: { type: 'between', a: 10, b: 19 }, ask: 'Probabilité que le numéro commence par 1 et ait deux chiffres (10 à 19)' }
+  ],
+  props: [
+    'C\'est le cadre de la formule de Laplace : P(A) = nombre de cas favorables / nombre de cas possibles.',
+    'La loi est symétrique autour de (<var>a</var> + <var>b</var>)/2 : coefficient d\'asymétrie nul, espérance égale à la médiane.',
+    'Toutes les valeurs sont des modes : aucune n\'est plus probable qu\'une autre.',
+    'Si <var>U</var> suit la loi uniforme continue sur [0 ; 1[, alors <var>a</var> + ⌊<var>nU</var>⌋ suit la loi uniforme discrète sur {<var>a</var>, …, <var>b</var>} : c\'est ainsi que les ordinateurs la simulent.'
+  ]
+},
+{
+  id: 'pascal', name: 'Pascal (binomiale négative)', tag: 'Attente du r-ième succès',
+  params: [
+    { key: 'r', label: 'Nombre de succès visés', sym: 'r', min: 1, max: 20, step: 1, value: 3, int: true },
+    { key: 'p', label: 'Probabilité de succès', sym: 'p', min: 0.05, max: 1, step: 0.01, value: 0.3 }
+  ],
+  notation: P => `Pascal(${P.r} ; ${fmt(P.p)})`,
+  variable: '<var>X</var> = nombre d\'épreuves nécessaires pour obtenir <var>r</var> succès.',
+  lede: 'On répète une épreuve de Bernoulli jusqu\'à obtenir <var>r</var> succès. La loi de Pascal décrit le nombre total d\'essais. Elle généralise la loi géométrique, qui correspond à <var>r</var> = 1.',
+  when: 'Nombre d\'entretiens pour recruter <var>r</var> personnes, nombre de lancers francs pour en réussir <var>r</var>, nombre de forages pour trouver <var>r</var> puits productifs.',
+  support: P => ({ min: P.r, max: Infinity }),
+  supportTxt: P => `{${P.r}, ${P.r + 1}, ${P.r + 2}, …}`,
+  pmf: (k, P) => k < P.r ? 0 : Math.exp(lchoose(k - 1, P.r - 1)) * P.p ** P.r * (1 - P.p) ** (k - P.r),
+  mean: P => P.r / P.p, variance: P => P.r * (1 - P.p) / P.p ** 2,
+  F: {
+    pmf: `P(X = k) = ${bin('k − 1', '<var>r</var> − 1')} <var>p</var><sup>r</sup> (1 − <var>p</var>)<sup>k − r</sup>`,
+    cdf: 'F(k) = P(au moins <var>r</var> succès en k essais) = P(𝓑(k ; <var>p</var>) ≥ <var>r</var>)',
+    mean: 'E(X) = <var>r</var> / <var>p</var>', variance: 'V(X) = <var>r</var>(1 − <var>p</var>) / <var>p</var>²',
+    pgf: 'G(s) = (<var>p</var>s / (1 − (1 − <var>p</var>)s))<sup>r</sup>'
+  },
+  detail(k, P) {
+    if (k < P.r) return `${k} &lt; r = ${P.r} : impossible d'avoir ${P.r} succès en moins de ${P.r} essais, la probabilité est nulle.`;
+    return `P(X = ${k}) = ${bin(k - 1, P.r - 1)} × ${pw(par(fmt(P.p)), P.r)} × ${pw(par(fmt(1 - P.p)), k - P.r)} = ${fmt(choose(k - 1, P.r - 1))} × ${fmt(P.p ** P.r, 6)} × ${fmt((1 - P.p) ** (k - P.r), 6)}`;
+  },
+  mech: 'On répète l\'épreuve de Bernoulli jusqu\'à obtenir <var>r</var> succès et on compte le nombre total d\'essais. ○ = échec, ● = succès.',
+  sample(P, t) {
+    let x = 0, w = 0, s = '';
+    while (w < P.r) { x++; const ok = Math.random() < P.p; w += ok; if (t && x <= 60) s += ok ? '●' : '○'; }
+    if (t) t.html = `<span class="tr">${s}${x > 60 ? '…' : ''}</span> → <b>X = ${x}</b> essais pour ${P.r} succès`;
+    return x;
+  },
+  overlays: [
+    { id: 'normal', label: 'Approximation normale 𝓝(r/p ; r(1−p)/p²)', kind: 'line', fn: P => normalDensity(P.r / P.p, Math.sqrt(P.r * (1 - P.p)) / P.p) }
+  ],
+  examples: [
+    { title: 'Lancers francs', text: 'Une joueuse réussit chaque lancer franc avec la probabilité 0,7. Elle tire jusqu\'à en réussir 5.', params: { r: 5, p: 0.7 }, q: { type: 'le', a: 7 }, ask: 'Probabilité qu\'elle y parvienne en au plus 7 lancers' },
+    { title: 'Recrutement', text: '30 % des candidats reçus en entretien acceptent le poste. L\'entreprise doit recruter 3 personnes.', params: { r: 3, p: 0.3 }, q: { type: 'gt', a: 10 }, ask: 'Probabilité qu\'il faille plus de 10 entretiens' }
+  ],
+  props: [
+    '<var>X</var> est la somme de <var>r</var> variables géométriques 𝓖(<var>p</var>) indépendantes (attente du 1<sup>er</sup> succès, puis du 2<sup>e</sup>, etc.), ce qui donne directement E(<var>X</var>) = <var>r</var>/<var>p</var>.',
+    'Lien avec la binomiale : P(<var>X</var> ≤ <var>k</var>) = P(<var>Y</var> ≥ <var>r</var>) avec <var>Y</var> ∼ 𝓑(<var>k</var> ; <var>p</var>). Avoir eu <var>r</var> succès en au plus <var>k</var> essais, c\'est avoir au moins <var>r</var> succès lors des <var>k</var> premiers essais.',
+    'Variante « binomiale négative » : le nombre d\'échecs avant le <var>r</var>-ième succès, <var>Y</var> = <var>X</var> − <var>r</var>, à valeurs dans ℕ, d\'espérance <var>r</var>(1 − <var>p</var>)/<var>p</var>.',
+    'Pour <var>r</var> = 1, on retrouve la loi géométrique.'
+  ]
+}
+];
+
+function normalDensity(m, s) { return x => s > 0 ? Math.exp(-((x - m) ** 2) / (2 * s * s)) / (s * Math.sqrt(2 * Math.PI)) : 0; }
+
+function lawTitle(L) { return L.title || { bernoulli: 'loi de Bernoulli', poisson: 'loi de Poisson', pascal: 'loi de Pascal' }[L.id] || 'loi ' + L.name.toLowerCase(); }
+function getLaw(id) { return LAWS.find(L => L.id === id); }
+function constrain(L, P) {
+  for (const q of L.params) {
+    const mx = typeof q.max === 'function' ? q.max(P) : q.max;
+    let v = Number(P[q.key]); if (!isFinite(v)) v = q.value;
+    if (q.int) v = Math.round(v);
+    P[q.key] = Math.min(Math.max(v, q.min), mx);
+  }
+  if (L.constrain) L.constrain(P);
+  return P;
+}
+
+// Tableau complet de la loi (support infini tronqué quand la masse restante < 1e-12)
+function table(L, P) {
+  const s = L.support(P); const ks = [], ps = [], cs = []; let c = 0;
+  for (let k = s.min; k <= s.max; k++) {
+    const v = L.pmf(k, P); c += v; ks.push(k); ps.push(v); cs.push(Math.min(c, 1));
+    if (!isFinite(s.max) && (c >= 1 - 1e-12 || ks.length > 20000)) break;
+  }
+  return { ks, ps, cs, infinite: !isFinite(s.max) };
+}
+
+function stats(L, P, T) {
+  const m = L.mean(P), v = L.variance(P), sd = Math.sqrt(v);
+  let m3 = 0, m4 = 0;
+  T.ks.forEach((k, i) => { const d = k - m; m3 += d ** 3 * T.ps[i]; m4 += d ** 4 * T.ps[i]; });
+  const skew = sd > 1e-12 ? m3 / sd ** 3 : NaN, kurt = sd > 1e-12 ? m4 / v ** 2 - 3 : NaN;
+  const pmax = Math.max(...T.ps);
+  const modes = T.ks.filter((k, i) => T.ps[i] >= pmax * (1 - 1e-9));
+  let med = T.ks[T.ks.length - 1];
+  for (let i = 0; i < T.ks.length; i++) if (T.cs[i] >= 0.5 - 1e-12) { med = T.ks[i]; break; }
+  return { mean: m, variance: v, sd, skew, kurt, modes, median: med };
+}
+
+function inEvent(k, q) {
+  switch (q.type) {
+    case 'eq': return k === q.a;
+    case 'le': return k <= q.a;
+    case 'lt': return k < q.a;
+    case 'ge': return k >= q.a;
+    case 'gt': return k > q.a;
+    case 'between': return k >= q.a && k <= q.b;
+  }
+  return false;
+}
+function prob(T, q) {
+  if (q.type === 'ge' || q.type === 'gt') { // complément, pour inclure la queue infinie
+    let s = 0; T.ks.forEach((k, i) => { if (!inEvent(k, q)) s += T.ps[i]; }); return Math.max(0, 1 - s);
+  }
+  let s = 0; T.ks.forEach((k, i) => { if (inEvent(k, q)) s += T.ps[i]; }); return Math.min(1, s);
+}
+
+// ---------- Fonctions spéciales ----------
+function lgamma(x) {
+  const c = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+  if (x < 0.5) return Math.log(Math.PI / Math.abs(Math.sin(Math.PI * x))) - lgamma(1 - x);
+  x -= 1; let a = c[0]; const t = x + 7.5;
+  for (let i = 1; i < 9; i++) a += c[i] / (x + i);
+  return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
+}
+function erfc(x) {
+  const z = Math.abs(x), t = 1 / (1 + 0.5 * z);
+  const r = t * Math.exp(-z * z - 1.26551223 + t * (1.00002368 + t * (0.37409196 + t * (0.09678418 + t * (-0.18628806 + t * (0.27886807 + t * (-1.13520398 + t * (1.48851587 + t * (-0.82215223 + t * 0.17087277)))))))));
+  return x >= 0 ? r : 2 - r;
+}
+function Phi(z) { return z < 0 ? 0.5 * erfc(-z / Math.SQRT2) : 1 - 0.5 * erfc(z / Math.SQRT2); }
+function gammaP(a, x) {
+  if (x <= 0) return 0;
+  const lead = -x + a * Math.log(x) - lgamma(a);
+  if (x < a + 1) {
+    let ap = a, sum = 1 / a, del = sum;
+    for (let n = 0; n < 1000; n++) { ap++; del *= x / ap; sum += del; if (Math.abs(del) < Math.abs(sum) * 1e-15) break; }
+    return Math.min(1, sum * Math.exp(lead));
+  }
+  const FP = 1e-300; let b = x + 1 - a, c = 1 / FP, d = 1 / b, h = d;
+  for (let i = 1; i < 1000; i++) {
+    const an = -i * (i - a); b += 2; d = an * d + b; if (Math.abs(d) < FP) d = FP; c = b + an / c; if (Math.abs(c) < FP) c = FP;
+    d = 1 / d; const del = d * c; h *= del; if (Math.abs(del - 1) < 1e-15) break;
+  }
+  return Math.max(0, 1 - Math.exp(lead) * h);
+}
+function betacf(a, b, x) {
+  const FP = 1e-300, qab = a + b, qap = a + 1, qam = a - 1; let c = 1, d = 1 - qab * x / qap;
+  if (Math.abs(d) < FP) d = FP; d = 1 / d; let h = d;
+  for (let m = 1; m <= 1000; m++) {
+    const m2 = 2 * m; let aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+    d = 1 + aa * d; if (Math.abs(d) < FP) d = FP; c = 1 + aa / c; if (Math.abs(c) < FP) c = FP; d = 1 / d; h *= d * c;
+    aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+    d = 1 + aa * d; if (Math.abs(d) < FP) d = FP; c = 1 + aa / c; if (Math.abs(c) < FP) c = FP; d = 1 / d;
+    const del = d * c; h *= del; if (Math.abs(del - 1) < 1e-15) break;
+  }
+  return h;
+}
+function betaI(a, b, x) {
+  if (x <= 0) return 0; if (x >= 1) return 1;
+  const bt = Math.exp(lgamma(a + b) - lgamma(a) - lgamma(b) + a * Math.log(x) + b * Math.log(1 - x));
+  return x < (a + 1) / (a + b + 2) ? bt * betacf(a, b, x) / a : 1 - bt * betacf(b, a, 1 - x) / b;
+}
+const lbeta = (a, b) => lgamma(a) + lgamma(b) - lgamma(a + b);
+function rnorm() { let u = 0; while (u === 0) u = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * Math.random()); }
+function rgamma(k) {
+  if (k < 1) return rgamma(k + 1) * Math.pow(Math.random(), 1 / k);
+  const d = k - 1 / 3, c = 1 / Math.sqrt(9 * d);
+  while (true) {
+    let x, v; do { x = rnorm(); v = 1 + c * x; } while (v <= 0);
+    v = v * v * v; const u = Math.random();
+    if (u < 1 - 0.0331 * x ** 4 || Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) return d * v;
+  }
+}
+function rchi2(k) { let s = 0; for (let i = 0; i < k; i++) { const z = rnorm(); s += z * z; } return s; }
+
+function quantile(L, P, a) {
+  const s = L.support(P);
+  let lo = isFinite(s.min) ? s.min : -1, hi = isFinite(s.max) ? s.max : 1;
+  if (!isFinite(s.min)) while (L.cdf(lo, P) > a && lo > -1e12) lo *= 2;
+  if (!isFinite(s.max)) { hi = Math.max(hi, lo + 1); while (L.cdf(hi, P) < a && hi < 1e12) hi *= 2; }
+  for (let i = 0; i < 200; i++) {
+    const mid = (lo + hi) / 2;
+    if (L.cdf(mid, P) < a) lo = mid; else hi = mid;
+    if (hi - lo < 1e-12 * Math.max(1, Math.abs(mid))) break;
+  }
+  return (lo + hi) / 2;
+}
+function probC(L, P, q) {
+  if (q.type === 'q') return quantile(L, P, q.a);
+  if (q.type === 'le' || q.type === 'lt') return L.cdf(q.a, P);
+  if (q.type === 'ge' || q.type === 'gt') return 1 - L.cdf(q.a, P);
+  if (q.type === 'between') return Math.max(0, L.cdf(q.b, P) - L.cdf(q.a, P));
+  return 0;
+}
+const NOMGF = 'n\'existe pas (E(e<sup>tX</sup>) est infinie pour tout t &gt; 0)';
+const vr = s => `<var>${s}</var>`;
+
+const CLAWS = [
+{
+  id: 'cuniform', kind: 'continuous', name: 'Uniforme continue', title: 'loi uniforme continue', tag: 'Densité constante sur [a ; b]',
+  params: [
+    { key: 'a', label: 'Borne inférieure', sym: 'a', min: -10, max: 10, step: 0.1, value: 0 },
+    { key: 'b', label: 'Borne supérieure', sym: 'b', min: -10, max: 20, step: 0.1, value: 1 }
+  ],
+  constrain(P) { if (P.b <= P.a) P.b = +(P.a + 0.1).toFixed(10); return P; },
+  notation: P => `𝓤([${fmt(P.a)} ; ${fmt(P.b)}])`, genNotation: `𝓤([${vr('a')} ; ${vr('b')}])`,
+  variable: `${vr('X')} = point choisi « au hasard » dans l'intervalle [${vr('a')} ; ${vr('b')}] : deux sous-intervalles de même longueur ont la même probabilité.`,
+  lede: `La loi uniforme continue répartit la probabilité de façon égale sur un intervalle. La probabilité d'un sous-intervalle est simplement sa longueur divisée par ${vr('b')} − ${vr('a')}. C'est le point de départ de toutes les simulations sur ordinateur.`,
+  when: 'Instant d\'arrivée au hasard dans un créneau, erreur d\'arrondi, position d\'un point tiré au hasard sur un segment, nombre aléatoire entre 0 et 1.',
+  support: P => ({ min: P.a, max: P.b }), supportTxt: P => `[${fmt(P.a)} ; ${fmt(P.b)}]`, genSupport: `[${vr('a')} ; ${vr('b')}]`,
+  pdf: (x, P) => (x < P.a || x > P.b) ? 0 : 1 / (P.b - P.a),
+  cdf: (x, P) => x <= P.a ? 0 : x >= P.b ? 1 : (x - P.a) / (P.b - P.a),
+  mean: P => (P.a + P.b) / 2, variance: P => (P.b - P.a) ** 2 / 12, skew: () => 0, kurt: () => -1.2,
+  mode: () => 'toute valeur de [a ; b]', median: P => (P.a + P.b) / 2,
+  F: {
+    pdf: `f(x) = 1 / (${vr('b')} − ${vr('a')}) si x ∈ [${vr('a')} ; ${vr('b')}], 0 sinon`,
+    cdf: `F(x) = (x − ${vr('a')}) / (${vr('b')} − ${vr('a')}) pour x ∈ [${vr('a')} ; ${vr('b')}]`,
+    mean: `E(X) = (${vr('a')} + ${vr('b')}) / 2`, variance: `V(X) = (${vr('b')} − ${vr('a')})² / 12`,
+    mgf: `M(t) = (e<sup>tb</sup> − e<sup>ta</sup>) / (t(${vr('b')} − ${vr('a')})) pour t ≠ 0`
+  },
+  Fexpr: (x, P) => x <= P.a ? '0' : x >= P.b ? '1' : `(${fmt(x)} − ${par(fmt(P.a))}) / (${fmt(P.b)} − ${par(fmt(P.a))})`,
+  view: P => { const w = P.b - P.a; return [P.a - 0.15 * w, P.b + 0.15 * w]; },
+  mech: `On tire <var>U</var> uniforme entre 0 et 1 (c'est ce que fait la fonction « random » d'un ordinateur), puis on pose ${vr('X')} = ${vr('a')} + (${vr('b')} − ${vr('a')})<var>U</var>.`,
+  sample(P, t) { const u = Math.random(), x = P.a + (P.b - P.a) * u; if (t) t.html = `U = ${fmt(u, 3)} → X = ${fmt(P.a)} + ${fmt(P.b - P.a)} × ${fmt(u, 3)} = <b>${fmt(x, 3)}</b>`; return x; },
+  overlays: [],
+  examples: [
+    { title: 'Attendre le bus', text: 'Un bus passe toutes les 15 minutes et vous arrivez à l\'arrêt à un instant quelconque. Votre attente <var>X</var> (en minutes) suit 𝓤([0 ; 15]).', params: { a: 0, b: 15 }, q: { type: 'ge', a: 10 }, ask: 'Probabilité d\'attendre au moins 10 minutes' },
+    { title: 'Nombre aléatoire', text: 'La fonction random() d\'un tableur renvoie un nombre <var>X</var> uniforme entre 0 et 1.', params: { a: 0, b: 1 }, q: { type: 'between', a: 0.2, b: 0.5 }, ask: 'Probabilité que le nombre soit entre 0,2 et 0,5' }
+  ],
+  props: [
+    'La probabilité d\'un intervalle ne dépend que de sa longueur : P(<var>c</var> ≤ <var>X</var> ≤ <var>d</var>) = (<var>d</var> − <var>c</var>) / (<var>b</var> − <var>a</var>).',
+    'Méthode d\'inversion : si <var>U</var> ∼ 𝓤([0 ; 1]) et <var>F</var> est une fonction de répartition, alors <var>F</var><sup>−1</sup>(<var>U</var>) suit la loi de fonction de répartition <var>F</var>. Toutes les lois de cet atlas peuvent ainsi être simulées à partir de nombres uniformes.',
+    'La somme de deux variables uniformes indépendantes sur [0 ; 1] suit une loi triangulaire sur [0 ; 2] : elle n\'est plus uniforme.',
+    'C\'est la limite de la loi uniforme discrète quand le nombre de valeurs devient très grand et leur écart très petit.'
+  ]
+},
+{
+  id: 'exponential', kind: 'continuous', name: 'Exponentielle', title: 'loi exponentielle', tag: 'Durée de vie sans usure',
+  params: [{ key: 'lambda', label: 'Taux (nombre moyen d\'événements par unité de temps)', sym: 'λ', min: 0.05, max: 5, step: 0.05, value: 0.5 }],
+  notation: P => `𝓔(${fmt(P.lambda)})`, genNotation: '𝓔(λ)',
+  variable: `${vr('X')} = durée d'attente avant un événement qui survient à un rythme constant λ (durée de vie, temps entre deux arrivées).`,
+  lede: 'La loi exponentielle modélise une durée de vie « sans usure » : la probabilité de tomber en panne dans la prochaine heure ne dépend pas de l\'âge de l\'appareil. C\'est l\'équivalent continu de la loi géométrique.',
+  when: 'Durée de vie d\'un composant électronique, temps entre deux arrivées de clients, temps avant la désintégration d\'un atome radioactif.',
+  support: () => ({ min: 0, max: Infinity }), supportTxt: () => '[0 ; +∞[', genSupport: '[0 ; +∞[',
+  pdf: (x, P) => x < 0 ? 0 : P.lambda * Math.exp(-P.lambda * x),
+  cdf: (x, P) => x <= 0 ? 0 : 1 - Math.exp(-P.lambda * x),
+  mean: P => 1 / P.lambda, variance: P => 1 / P.lambda ** 2, skew: () => 2, kurt: () => 6,
+  mode: () => 0, median: P => Math.LN2 / P.lambda,
+  F: {
+    pdf: 'f(x) = λ e<sup>−λx</sup> pour x ≥ 0', cdf: 'F(x) = 1 − e<sup>−λx</sup> pour x ≥ 0',
+    mean: 'E(X) = 1 / λ', variance: 'V(X) = 1 / λ²', mgf: 'M(t) = λ / (λ − t) pour t &lt; λ'
+  },
+  Fexpr: (x, P) => x <= 0 ? '0' : `1 − e<sup>−${fmt(P.lambda)} × ${fmt(x)}</sup>`,
+  mech: 'Méthode d\'inversion : on tire <var>U</var> uniforme entre 0 et 1, puis <var>X</var> = −ln(<var>U</var>) / λ.',
+  sample(P, t) { const u = 1 - Math.random(), x = -Math.log(u) / P.lambda; if (t) t.html = `U = ${fmt(u, 3)} → X = −ln(${fmt(u, 3)}) / ${fmt(P.lambda)} = <b>${fmt(x, 3)}</b>`; return x; },
+  overlays: [],
+  examples: [
+    { title: 'Durée de vie d\'un appareil', text: 'Un appareil a une durée de vie moyenne de 8 ans, sans usure. Sa durée de vie <var>X</var> (en années) suit 𝓔(1/8) = 𝓔(0,125).', params: { lambda: 0.125 }, q: { type: 'ge', a: 10 }, ask: 'Probabilité qu\'il fonctionne encore après 10 ans' },
+    { title: 'Arrivées de clients', text: 'Il arrive en moyenne 2 clients par minute. Le temps <var>X</var> (en minutes) entre deux arrivées suit 𝓔(2).', params: { lambda: 2 }, q: { type: 'le', a: 0.5 }, ask: 'Probabilité que le client suivant arrive en moins de 30 secondes' }
+  ],
+  props: [
+    'Absence de mémoire : P(<var>X</var> &gt; <var>s</var> + <var>t</var> | <var>X</var> &gt; <var>s</var>) = P(<var>X</var> &gt; <var>t</var>). C\'est la seule loi continue qui a cette propriété.',
+    'Lien avec Poisson : si les événements arrivent selon une loi de Poisson de paramètre λ par unité de temps, les durées entre deux événements suivent 𝓔(λ).',
+    'Le minimum de deux durées exponentielles indépendantes 𝓔(λ) et 𝓔(μ) suit 𝓔(λ + μ).',
+    'C\'est la loi gamma Γ(1 ; λ). La somme de <var>k</var> exponentielles indépendantes 𝓔(λ) suit Γ(<var>k</var> ; λ).',
+    'La médiane ln 2 / λ est inférieure à la moyenne 1/λ : la plupart des durées sont courtes, quelques-unes très longues.'
+  ]
+},
+{
+  id: 'normal', kind: 'continuous', name: 'Normale', title: 'loi normale', tag: 'La courbe en cloche',
+  params: [
+    { key: 'mu', label: 'Moyenne', sym: 'μ', min: -20, max: 200, step: 0.1, value: 0 },
+    { key: 'sigma', label: 'Écart-type', sym: 'σ', min: 0.1, max: 50, step: 0.1, value: 1 }
+  ],
+  notation: P => `𝓝(${fmt(P.mu)} ; ${fmt(P.sigma ** 2)})`, genNotation: '𝓝(μ ; σ²)',
+  variable: `${vr('X')} = grandeur qui résulte de nombreux petits effets indépendants qui s'additionnent (mesure, taille, note, erreur).`,
+  lede: 'La loi normale (ou de Laplace-Gauss) est la loi centrale des statistiques. Sa densité en cloche est symétrique autour de μ, et σ règle sa largeur. Le théorème central limite explique pourquoi elle apparaît partout.',
+  when: 'Erreurs de mesure, tailles et poids dans une population, scores de QI, moyennes d\'échantillons, approximation des lois binomiale et de Poisson.',
+  support: () => ({ min: -Infinity, max: Infinity }), supportTxt: () => 'ℝ', genSupport: 'ℝ = ]−∞ ; +∞[',
+  pdf: (x, P) => Math.exp(-((x - P.mu) ** 2) / (2 * P.sigma ** 2)) / (P.sigma * Math.sqrt(2 * Math.PI)),
+  cdf: (x, P) => Phi((x - P.mu) / P.sigma),
+  mean: P => P.mu, variance: P => P.sigma ** 2, skew: () => 0, kurt: () => 0, mode: P => P.mu, median: P => P.mu,
+  F: {
+    pdf: 'f(x) = (1 / (σ√(2π))) e<sup>−(x − μ)² / (2σ²)</sup>',
+    cdf: 'F(x) = Φ((x − μ) / σ), où Φ est la fonction de répartition de 𝓝(0 ; 1) (table de la loi normale)',
+    mean: 'E(X) = μ', variance: 'V(X) = σ²', mgf: 'M(t) = e<sup>μt + σ²t²/2</sup>'
+  },
+  Fexpr: (x, P) => `Φ((${fmt(x)} − ${par(fmt(P.mu))}) / ${fmt(P.sigma)}) = Φ(${fmt((x - P.mu) / P.sigma, 4)})`,
+  mech: 'Méthode de Box-Muller : à partir de deux nombres uniformes <var>U</var>₁ et <var>U</var>₂, <var>Z</var> = √(−2 ln <var>U</var>₁) cos(2π<var>U</var>₂) suit 𝓝(0 ; 1). On pose ensuite <var>X</var> = μ + σ<var>Z</var>.',
+  sample(P, t) {
+    const u1 = 1 - Math.random(), u2 = Math.random(), z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2), x = P.mu + P.sigma * z;
+    if (t) t.html = `U₁ = ${fmt(u1, 3)}, U₂ = ${fmt(u2, 3)} → Z = ${fmt(z, 3)} → X = ${fmt(P.mu)} + ${fmt(P.sigma)} × ${par(fmt(z, 3))} = <b>${fmt(x, 3)}</b>`;
+    return x;
+  },
+  overlays: [],
+  examples: [
+    { title: 'Quotient intellectuel', text: 'Les scores de QI suivent 𝓝(100 ; 15²) : moyenne 100, écart-type 15.', params: { mu: 100, sigma: 15 }, q: { type: 'ge', a: 130 }, ask: 'Proportion de personnes ayant un QI d\'au moins 130' },
+    { title: 'Loi normale centrée réduite', text: '<var>Z</var> ∼ 𝓝(0 ; 1) est la loi des tables. On cherche la valeur <var>z</var> qui laisse 2,5 % de chances à droite, celle des intervalles de confiance à 95 %.', params: { mu: 0, sigma: 1 }, q: { type: 'q', a: 0.975 }, ask: 'Quantile d\'ordre 0,975' }
+  ],
+  props: [
+    'Règle 68-95-99,7 : environ 68 % des valeurs sont dans [μ − σ ; μ + σ], 95 % dans [μ − 2σ ; μ + 2σ] et 99,7 % dans [μ − 3σ ; μ + 3σ].',
+    'Centrage-réduction : si <var>X</var> ∼ 𝓝(μ ; σ²), alors <var>Z</var> = (<var>X</var> − μ)/σ ∼ 𝓝(0 ; 1). C\'est ainsi qu\'on utilise la table de Φ.',
+    'Stabilité : la somme de deux variables normales indépendantes 𝓝(μ₁ ; σ₁²) et 𝓝(μ₂ ; σ₂²) suit 𝓝(μ₁ + μ₂ ; σ₁² + σ₂²).',
+    'Théorème central limite : la moyenne de <var>n</var> variables indépendantes de même loi (avec variance finie) suit approximativement une loi normale quand <var>n</var> est grand, quelle que soit la loi de départ.',
+    'Convention : on écrit 𝓝(μ ; σ²) avec la variance. Certains ouvrages écrivent 𝓝(μ ; σ) avec l\'écart-type ; vérifiez toujours lequel est utilisé.'
+  ]
+},
+{
+  id: 'lognormal', kind: 'continuous', name: 'Log-normale', title: 'loi log-normale', tag: 'Son logarithme est normal',
+  params: [
+    { key: 'mu', label: 'Moyenne de ln X', sym: 'μ', min: -2, max: 5, step: 0.05, value: 0 },
+    { key: 'sigma', label: 'Écart-type de ln X', sym: 'σ', min: 0.1, max: 2, step: 0.05, value: 0.5 }
+  ],
+  notation: P => `𝓛𝓝(${fmt(P.mu)} ; ${fmt(P.sigma ** 2)})`, genNotation: '𝓛𝓝(μ ; σ²)',
+  variable: `${vr('X')} = grandeur positive dont le logarithme suit 𝓝(μ ; σ²). Elle résulte de nombreux effets qui se multiplient.`,
+  lede: 'Une variable suit la loi log-normale quand son logarithme suit une loi normale. Elle est toujours positive et étalée vers la droite : beaucoup de petites valeurs et quelques très grandes.',
+  when: 'Revenus et salaires, tailles de fichiers ou de villes, cours boursiers, concentrations de polluants, durées de réparation.',
+  support: () => ({ min: 0, max: Infinity }), supportTxt: () => ']0 ; +∞[', genSupport: ']0 ; +∞[',
+  pdf: (x, P) => x <= 0 ? 0 : Math.exp(-((Math.log(x) - P.mu) ** 2) / (2 * P.sigma ** 2)) / (x * P.sigma * Math.sqrt(2 * Math.PI)),
+  cdf: (x, P) => x <= 0 ? 0 : Phi((Math.log(x) - P.mu) / P.sigma),
+  mean: P => Math.exp(P.mu + P.sigma ** 2 / 2), variance: P => (Math.exp(P.sigma ** 2) - 1) * Math.exp(2 * P.mu + P.sigma ** 2),
+  skew: P => (Math.exp(P.sigma ** 2) + 2) * Math.sqrt(Math.exp(P.sigma ** 2) - 1),
+  kurt: P => Math.exp(4 * P.sigma ** 2) + 2 * Math.exp(3 * P.sigma ** 2) + 3 * Math.exp(2 * P.sigma ** 2) - 6,
+  mode: P => Math.exp(P.mu - P.sigma ** 2), median: P => Math.exp(P.mu),
+  F: {
+    pdf: 'f(x) = (1 / (xσ√(2π))) e<sup>−(ln x − μ)² / (2σ²)</sup> pour x &gt; 0',
+    cdf: 'F(x) = Φ((ln x − μ) / σ)',
+    mean: 'E(X) = e<sup>μ + σ²/2</sup>', variance: 'V(X) = (e<sup>σ²</sup> − 1) e<sup>2μ + σ²</sup>', mgf: NOMGF
+  },
+  Fexpr: (x, P) => x <= 0 ? '0' : `Φ((ln ${fmt(x)} − ${par(fmt(P.mu))}) / ${fmt(P.sigma)}) = Φ(${fmt((Math.log(x) - P.mu) / P.sigma, 4)})`,
+  view: P => [0, quantile(CLAWS[3], P, 0.995)],
+  mech: 'On simule <var>Y</var> ∼ 𝓝(μ ; σ²) par la méthode de Box-Muller, puis on pose <var>X</var> = e<sup><var>Y</var></sup>.',
+  sample(P, t) { const y = P.mu + P.sigma * rnorm(), x = Math.exp(y); if (t) t.html = `Y = ${fmt(y, 3)} → X = e<sup>Y</sup> = <b>${fmt(x, 3)}</b>`; return x; },
+  overlays: [],
+  examples: [
+    { title: 'Salaires', text: 'Dans une entreprise, le logarithme du salaire annuel (en milliers d\'euros) suit 𝓝(3,4 ; 0,4²). Le salaire <var>X</var> suit donc 𝓛𝓝(3,4 ; 0,16).', params: { mu: 3.4, sigma: 0.4 }, q: { type: 'ge', a: 50 }, ask: 'Proportion de salariés gagnant au moins 50 000 €' },
+    { title: 'Taille de grains', text: 'Le diamètre <var>X</var> (en mm) des grains d\'un sable suit 𝓛𝓝(0 ; 0,25) : la médiane vaut e⁰ = 1 mm.', params: { mu: 0, sigma: 0.5 }, q: { type: 'between', a: 0.5, b: 2 }, ask: 'Proportion de grains entre 0,5 et 2 mm' }
+  ],
+  props: [
+    'Si <var>X</var> ∼ 𝓛𝓝(μ ; σ²), alors ln <var>X</var> ∼ 𝓝(μ ; σ²) : on calcule toutes les probabilités avec la table de la loi normale.',
+    'Mode &lt; médiane &lt; moyenne : e<sup>μ − σ²</sup> &lt; e<sup>μ</sup> &lt; e<sup>μ + σ²/2</sup>. La moyenne est tirée vers le haut par les grandes valeurs.',
+    'Le produit de deux variables log-normales indépendantes est log-normal (les logarithmes s\'additionnent).',
+    'Version multiplicative du théorème central limite : un produit de nombreux facteurs positifs indépendants suit approximativement une loi log-normale.'
+  ]
+},
+{
+  id: 'gamma', kind: 'continuous', name: 'Gamma', title: 'loi gamma', tag: 'Attente du k-ième événement',
+  params: [
+    { key: 'k', label: 'Paramètre de forme', sym: 'k', min: 0.2, max: 30, step: 0.1, value: 2 },
+    { key: 'lambda', label: 'Taux', sym: 'λ', min: 0.1, max: 5, step: 0.05, value: 1 }
+  ],
+  notation: P => `Γ(${fmt(P.k)} ; ${fmt(P.lambda)})`, genNotation: `Γ(${vr('k')} ; λ)`,
+  variable: `${vr('X')} = durée d'attente du ${vr('k')}-ième événement quand les événements arrivent au rythme λ (pour ${vr('k')} entier).`,
+  lede: 'La loi gamma généralise la loi exponentielle. Pour <var>k</var> entier, c\'est la durée d\'attente jusqu\'au <var>k</var>-ième événement d\'un processus de Poisson. Le paramètre <var>k</var> règle la forme, λ l\'échelle.',
+  when: 'Temps nécessaire pour servir <var>k</var> clients, durée de vie d\'un système avec pièces de rechange, montants de sinistres en assurance, cumuls de pluie.',
+  support: () => ({ min: 0, max: Infinity }), supportTxt: () => '[0 ; +∞[', genSupport: '[0 ; +∞[',
+  pdf: (x, P) => x < 0 ? 0 : x === 0 ? (P.k < 1 ? Infinity : P.k === 1 ? P.lambda : 0) : Math.exp(P.k * Math.log(P.lambda) + (P.k - 1) * Math.log(x) - P.lambda * x - lgamma(P.k)),
+  cdf: (x, P) => gammaP(P.k, P.lambda * x),
+  mean: P => P.k / P.lambda, variance: P => P.k / P.lambda ** 2, skew: P => 2 / Math.sqrt(P.k), kurt: P => 6 / P.k,
+  mode: P => P.k >= 1 ? (P.k - 1) / P.lambda : 0,
+  F: {
+    pdf: `f(x) = λ<sup>k</sup> x<sup>k − 1</sup> e<sup>−λx</sup> / Γ(${vr('k')}) pour x ≥ 0`,
+    cdf: `F(x) = γ(${vr('k')}, λx) / Γ(${vr('k')}) (fonction gamma incomplète). Pour ${vr('k')} entier : 1 − e<sup>−λx</sup> Σ<sub>j &lt; k</sub> (λx)<sup>j</sup>/j!`,
+    mean: `E(X) = ${vr('k')} / λ`, variance: `V(X) = ${vr('k')} / λ²`, mgf: `M(t) = (1 − t/λ)<sup>−k</sup> pour t &lt; λ`
+  },
+  Fexpr: (x, P) => `F(${fmt(x)})`,
+  mech: 'Si <var>k</var> est entier, on additionne <var>k</var> durées exponentielles 𝓔(λ) indépendantes (attente du 1<sup>er</sup> événement, puis du 2<sup>e</sup>, etc.). Sinon, on utilise la méthode de Marsaglia et Tsang, valable pour tout <var>k</var> &gt; 0.',
+  sample(P, t) {
+    if (Number.isInteger(P.k) && P.k <= 50) {
+      let s = 0; const parts = [];
+      for (let i = 0; i < P.k; i++) { const e = -Math.log(1 - Math.random()) / P.lambda; s += e; if (parts.length < 8) parts.push(fmt(e, 2)); }
+      if (t) t.html = `Attentes successives <span class="tr">${parts.join(' + ')}${P.k > 8 ? ' + …' : ''}</span> → <b>X = ${fmt(s, 3)}</b>`;
+      return s;
+    }
+    const x = rgamma(P.k) / P.lambda; if (t) t.html = `Marsaglia-Tsang → <b>X = ${fmt(x, 3)}</b>`; return x;
+  },
+  overlays: [{ id: 'normal', label: 'Approximation normale 𝓝(k/λ ; k/λ²)', fn: P => normalDensity(P.k / P.lambda, Math.sqrt(P.k) / P.lambda) }],
+  examples: [
+    { title: 'Troisième client', text: 'Les clients arrivent au rythme de 2 par minute (processus de Poisson). L\'instant <var>X</var> d\'arrivée du 3<sup>e</sup> client suit Γ(3 ; 2).', params: { k: 3, lambda: 2 }, q: { type: 'le', a: 1 }, ask: 'Probabilité que 3 clients soient arrivés en moins d\'une minute' },
+    { title: 'Pièce de rechange', text: 'Un composant a une durée de vie 𝓔(0,1) (10 ans en moyenne) et on dispose d\'une pièce de rechange identique. La durée totale <var>X</var> suit Γ(2 ; 0,1).', params: { k: 2, lambda: 0.1 }, q: { type: 'ge', a: 20 }, ask: 'Probabilité que le système dure au moins 20 ans' }
+  ],
+  props: [
+    'Pour <var>k</var> = 1, on retrouve la loi exponentielle 𝓔(λ).',
+    'Additivité : si <var>X</var> ∼ Γ(<var>k</var>₁ ; λ) et <var>Y</var> ∼ Γ(<var>k</var>₂ ; λ) sont indépendantes, <var>X</var> + <var>Y</var> ∼ Γ(<var>k</var>₁ + <var>k</var>₂ ; λ).',
+    'La loi du khi-deux est un cas particulier : χ²(<var>n</var>) = Γ(<var>n</var>/2 ; 1/2).',
+    'Pour <var>k</var> entier, on l\'appelle aussi loi d\'Erlang. Lien avec Poisson : P(<var>X</var> ≤ <var>t</var>) = P(au moins <var>k</var> événements avant <var>t</var>).',
+    'Convention : certains ouvrages utilisent l\'échelle θ = 1/λ au lieu du taux λ, et écrivent Γ(<var>k</var> ; θ).',
+    'Quand <var>k</var> est grand, la loi se rapproche de la loi normale (activez la superposition).'
+  ]
+},
+{
+  id: 'beta', kind: 'continuous', name: 'Bêta', title: 'loi bêta', tag: 'Proportions entre 0 et 1',
+  params: [
+    { key: 'alpha', label: 'Premier paramètre de forme', sym: 'α', min: 0.2, max: 20, step: 0.1, value: 2 },
+    { key: 'beta', label: 'Second paramètre de forme', sym: 'β', min: 0.2, max: 20, step: 0.1, value: 5 }
+  ],
+  notation: P => `Bêta(${fmt(P.alpha)} ; ${fmt(P.beta)})`, genNotation: 'Bêta(α ; β)',
+  variable: `${vr('X')} = proportion ou probabilité inconnue, comprise entre 0 et 1.`,
+  lede: 'La loi bêta décrit une quantité comprise entre 0 et 1, typiquement une proportion. Selon α et β, sa densité peut être en cloche, en U, en J ou plate : c\'est une loi très souple.',
+  when: 'Taux de réussite, proportion d\'électeurs, probabilité inconnue en statistique bayésienne, durée relative d\'une tâche (méthode PERT).',
+  support: () => ({ min: 0, max: 1 }), supportTxt: () => '[0 ; 1]', genSupport: '[0 ; 1]',
+  pdf: (x, P) => (x < 0 || x > 1) ? 0 : Math.exp((P.alpha - 1) * Math.log(x) + (P.beta - 1) * Math.log(1 - x) - lbeta(P.alpha, P.beta)),
+  cdf: (x, P) => betaI(P.alpha, P.beta, x),
+  mean: P => P.alpha / (P.alpha + P.beta),
+  variance: P => P.alpha * P.beta / ((P.alpha + P.beta) ** 2 * (P.alpha + P.beta + 1)),
+  skew: P => 2 * (P.beta - P.alpha) * Math.sqrt(P.alpha + P.beta + 1) / ((P.alpha + P.beta + 2) * Math.sqrt(P.alpha * P.beta)),
+  kurt: P => { const a = P.alpha, b = P.beta; return 6 * ((a - b) ** 2 * (a + b + 1) - a * b * (a + b + 2)) / (a * b * (a + b + 2) * (a + b + 3)); },
+  mode: P => {
+    const a = P.alpha, b = P.beta;
+    if (a > 1 && b > 1) return (a - 1) / (a + b - 2);
+    if (a === 1 && b === 1) return 'toute valeur de [0 ; 1]';
+    if (a < 1 && b < 1) return '0 et 1 (densité en U)';
+    if (a <= 1 && b >= 1) return 0;
+    return 1;
+  },
+  F: {
+    pdf: 'f(x) = x<sup>α − 1</sup> (1 − x)<sup>β − 1</sup> / B(α, β) pour x ∈ [0 ; 1]',
+    cdf: 'F(x) = I<sub>x</sub>(α, β) (fonction bêta incomplète régularisée)',
+    mean: 'E(X) = α / (α + β)', variance: 'V(X) = αβ / ((α + β)² (α + β + 1))',
+    mgf: 'pas de forme simple (série hypergéométrique ₁F₁)'
+  },
+  Fexpr: (x, P) => `I<sub>${fmt(x)}</sub>(${fmt(P.alpha)} ; ${fmt(P.beta)})`,
+  view: () => [0, 1],
+  mech: 'On simule deux variables gamma indépendantes <var>G</var>₁ ∼ Γ(α ; 1) et <var>G</var>₂ ∼ Γ(β ; 1), puis <var>X</var> = <var>G</var>₁ / (<var>G</var>₁ + <var>G</var>₂).',
+  sample(P, t) { const g1 = rgamma(P.alpha), g2 = rgamma(P.beta), x = g1 / (g1 + g2); if (t) t.html = `G₁ = ${fmt(g1, 3)}, G₂ = ${fmt(g2, 3)} → X = G₁ / (G₁ + G₂) = <b>${fmt(x, 3)}</b>`; return x; },
+  overlays: [],
+  examples: [
+    { title: 'Taux de réussite estimé', text: 'On ne sait rien d\'un taux de réussite <var>p</var>, puis on observe 7 succès et 3 échecs. En statistique bayésienne, <var>p</var> suit alors Bêta(8 ; 4).', params: { alpha: 8, beta: 4 }, q: { type: 'ge', a: 0.5 }, ask: 'Probabilité que le taux de réussite dépasse 50 %' },
+    { title: 'Avancement d\'un projet', text: 'La part du budget consommée par une tâche suit Bêta(2 ; 5) : le plus souvent faible, rarement élevée.', params: { alpha: 2, beta: 5 }, q: { type: 'le', a: 0.2 }, ask: 'Probabilité que la tâche consomme au plus 20 % du budget' }
+  ],
+  props: [
+    'Bêta(1 ; 1) est la loi uniforme sur [0 ; 1].',
+    'Symétrie : si <var>X</var> ∼ Bêta(α ; β), alors 1 − <var>X</var> ∼ Bêta(β ; α). La loi est symétrique quand α = β.',
+    'Statistique bayésienne : si l\'on part de Bêta(α ; β) pour une probabilité <var>p</var> et qu\'on observe <var>s</var> succès et <var>e</var> échecs, on obtient Bêta(α + <var>s</var> ; β + <var>e</var>).',
+    'Si <var>U</var>₁, …, <var>U</var><sub>n</sub> sont uniformes sur [0 ; 1], la <var>k</var>-ième plus petite valeur suit Bêta(<var>k</var> ; <var>n</var> − <var>k</var> + 1).'
+  ]
+},
+{
+  id: 'chi2', kind: 'continuous', name: 'Khi-deux', title: 'loi du khi-deux', tag: 'Somme de carrés de normales',
+  params: [{ key: 'k', label: 'Degrés de liberté', sym: 'k', min: 1, max: 100, step: 1, value: 4, int: true }],
+  notation: P => `χ²(${P.k})`, genNotation: `χ²(${vr('k')})`,
+  variable: `${vr('X')} = ${vr('Z')}₁² + … + ${vr('Z')}<sub>k</sub>², somme des carrés de ${vr('k')} variables normales centrées réduites indépendantes.`,
+  lede: 'La loi du khi-deux à <var>k</var> degrés de liberté est la loi d\'une somme de <var>k</var> carrés de variables normales 𝓝(0 ; 1) indépendantes. C\'est la loi des tests d\'adéquation et d\'indépendance.',
+  when: 'Test du khi-deux (adéquation à une loi, indépendance dans un tableau de contingence), intervalle de confiance pour une variance.',
+  support: () => ({ min: 0, max: Infinity }), supportTxt: () => '[0 ; +∞[', genSupport: '[0 ; +∞[',
+  pdf: (x, P) => x < 0 ? 0 : x === 0 ? (P.k < 2 ? Infinity : P.k === 2 ? 0.5 : 0) : Math.exp((P.k / 2 - 1) * Math.log(x) - x / 2 - (P.k / 2) * Math.LN2 - lgamma(P.k / 2)),
+  cdf: (x, P) => gammaP(P.k / 2, x / 2),
+  mean: P => P.k, variance: P => 2 * P.k, skew: P => Math.sqrt(8 / P.k), kurt: P => 12 / P.k, mode: P => Math.max(P.k - 2, 0),
+  F: {
+    pdf: `f(x) = x<sup>k/2 − 1</sup> e<sup>−x/2</sup> / (2<sup>k/2</sup> Γ(${vr('k')}/2)) pour x ≥ 0`,
+    cdf: `F(x) = γ(${vr('k')}/2, x/2) / Γ(${vr('k')}/2) (lue dans la table du khi-deux)`,
+    mean: `E(X) = ${vr('k')}`, variance: `V(X) = 2${vr('k')}`, mgf: `M(t) = (1 − 2t)<sup>−k/2</sup> pour t &lt; 1/2`
+  },
+  Fexpr: (x, P) => `F(${fmt(x)})`,
+  mech: 'On tire <var>k</var> variables normales centrées réduites indépendantes et on additionne leurs carrés.',
+  sample(P, t) {
+    let s = 0; const parts = [];
+    for (let i = 0; i < P.k; i++) { const z = rnorm(); s += z * z; if (parts.length < 6) parts.push(`${par(fmt(z, 2))}²`); }
+    if (t) t.html = `<span class="tr">${parts.join(' + ')}${P.k > 6 ? ' + …' : ''}</span> = <b>X = ${fmt(s, 3)}</b>`;
+    return s;
+  },
+  overlays: [{ id: 'normal', label: 'Approximation normale 𝓝(k ; 2k)', fn: P => normalDensity(P.k, Math.sqrt(2 * P.k)) }],
+  examples: [
+    { title: 'Tester un dé', text: 'On lance un dé 600 fois pour tester s\'il est équilibré. Sous l\'hypothèse « dé équilibré », la statistique du test suit χ²(5) (6 faces − 1). On rejette au risque 5 % si elle dépasse le quantile d\'ordre 0,95.', params: { k: 5 }, q: { type: 'q', a: 0.95 }, ask: 'Seuil de rejet au risque 5 %' },
+    { title: 'Indépendance', text: 'Un tableau de contingence 3 × 3 donne une statistique du khi-deux égale à 9,49, avec (3 − 1)(3 − 1) = 4 degrés de liberté.', params: { k: 4 }, q: { type: 'ge', a: 9.49 }, ask: 'p-valeur du test (probabilité de dépasser 9,49)' }
+  ],
+  props: [
+    'Additivité : si <var>X</var> ∼ χ²(<var>k</var>₁) et <var>Y</var> ∼ χ²(<var>k</var>₂) sont indépendantes, <var>X</var> + <var>Y</var> ∼ χ²(<var>k</var>₁ + <var>k</var>₂).',
+    'χ²(<var>k</var>) = Γ(<var>k</var>/2 ; 1/2). En particulier χ²(2) est la loi exponentielle 𝓔(1/2).',
+    'Estimation d\'une variance : pour un échantillon normal de taille <var>n</var>, (<var>n</var> − 1)<var>S</var>²/σ² ∼ χ²(<var>n</var> − 1).',
+    'Pour <var>k</var> grand, χ²(<var>k</var>) ≈ 𝓝(<var>k</var> ; 2<var>k</var>) (activez la superposition).'
+  ]
+},
+{
+  id: 'student', kind: 'continuous', name: 'Student', title: 'loi de Student', tag: 'Petits échantillons',
+  params: [{ key: 'k', label: 'Degrés de liberté', sym: 'k', min: 1, max: 100, step: 1, value: 5, int: true }],
+  notation: P => `𝓣(${P.k})`, genNotation: `𝓣(${vr('k')})`,
+  variable: `${vr('X')} = ${vr('Z')} / √(${vr('Y')}/${vr('k')}) avec ${vr('Z')} ∼ 𝓝(0 ; 1) et ${vr('Y')} ∼ χ²(${vr('k')}) indépendantes.`,
+  lede: 'La loi de Student ressemble à la loi normale centrée réduite, avec des queues plus épaisses. Elle apparaît quand on standardise une moyenne avec un écart-type estimé sur un petit échantillon. Plus <var>k</var> est grand, plus elle se rapproche de 𝓝(0 ; 1).',
+  when: 'Intervalle de confiance et test sur une moyenne quand l\'écart-type est inconnu, comparaison de deux moyennes, coefficients d\'une régression.',
+  support: () => ({ min: -Infinity, max: Infinity }), supportTxt: () => 'ℝ', genSupport: 'ℝ = ]−∞ ; +∞[',
+  pdf: (x, P) => Math.exp(lgamma((P.k + 1) / 2) - lgamma(P.k / 2) - 0.5 * Math.log(P.k * Math.PI) - (P.k + 1) / 2 * Math.log(1 + x * x / P.k)),
+  cdf: (x, P) => { const ib = betaI(P.k / 2, 0.5, P.k / (P.k + x * x)); return x >= 0 ? 1 - ib / 2 : ib / 2; },
+  mean: P => P.k > 1 ? 0 : NaN, variance: P => P.k > 2 ? P.k / (P.k - 2) : P.k === 2 ? Infinity : NaN,
+  skew: P => P.k > 3 ? 0 : NaN, kurt: P => P.k > 4 ? 6 / (P.k - 4) : P.k > 2 ? Infinity : NaN, mode: () => 0, median: () => 0,
+  F: {
+    pdf: `f(x) = Γ((${vr('k')} + 1)/2) / (√(${vr('k')}π) Γ(${vr('k')}/2)) · (1 + x²/${vr('k')})<sup>−(k + 1)/2</sup>`,
+    cdf: 'F(x) lue dans la table de Student (s\'exprime avec la fonction bêta incomplète)',
+    mean: `E(X) = 0 si ${vr('k')} &gt; 1 (n'existe pas si ${vr('k')} = 1)`, variance: `V(X) = ${vr('k')} / (${vr('k')} − 2) si ${vr('k')} &gt; 2 (infinie si ${vr('k')} = 2)`,
+    mgf: 'n\'existe pas (les queues sont trop épaisses)'
+  },
+  Fexpr: (x, P) => `F(${fmt(x)})`,
+  view: P => { const q = Math.max(4, quantile(CLAWS[7], P, 0.98)); return [-q, q]; },
+  mech: 'On tire <var>Z</var> ∼ 𝓝(0 ; 1) et <var>Y</var> ∼ χ²(<var>k</var>) (somme de <var>k</var> carrés de normales), puis <var>X</var> = <var>Z</var> / √(<var>Y</var>/<var>k</var>). Pour <var>k</var> = 1 (loi de Cauchy), observez que la moyenne des tirages ne se stabilise jamais.',
+  sample(P, t) { const z = rnorm(), y = rchi2(P.k), x = z / Math.sqrt(y / P.k); if (t) t.html = `Z = ${fmt(z, 3)}, Y = ${fmt(y, 3)} → X = Z / √(Y/${P.k}) = <b>${fmt(x, 3)}</b>`; return x; },
+  overlays: [{ id: 'normal', label: 'Loi normale 𝓝(0 ; 1)', fn: () => normalDensity(0, 1) }],
+  examples: [
+    { title: 'Intervalle de confiance', text: 'Sur un échantillon de 10 mesures, l\'intervalle de confiance à 95 % de la moyenne est x̄ ± <var>t</var> · s/√10, où <var>t</var> est le quantile d\'ordre 0,975 de 𝓣(9).', params: { k: 9 }, q: { type: 'q', a: 0.975 }, ask: 'Valeur de t à utiliser' },
+    { title: 'Queues épaisses', text: 'Avec seulement 3 degrés de liberté, les valeurs extrêmes sont bien plus fréquentes qu\'avec la loi normale (pour 𝓝(0 ; 1), P(|Z| ≤ 2) ≈ 0,954).', params: { k: 3 }, q: { type: 'between', a: -2, b: 2 }, ask: 'Probabilité que X soit entre −2 et 2' }
+  ],
+  props: [
+    'Statistique de Student : pour un échantillon normal de taille <var>n</var>, (<var>X̄</var> − μ) / (<var>S</var>/√<var>n</var>) ∼ 𝓣(<var>n</var> − 1).',
+    'Quand <var>k</var> → ∞, 𝓣(<var>k</var>) tend vers 𝓝(0 ; 1). En pratique, pour <var>k</var> ≥ 30 la différence est faible (comparez avec la superposition).',
+    'Pour <var>k</var> = 1, c\'est la loi de Cauchy : elle n\'a pas d\'espérance, et la loi des grands nombres ne s\'applique pas. La simulation le montre bien.',
+    'Le carré d\'une variable 𝓣(<var>k</var>) suit la loi de Fisher 𝓕(1 ; <var>k</var>).',
+    'La loi est symétrique : F(−x) = 1 − F(x).'
+  ]
+},
+{
+  id: 'fisher', kind: 'continuous', name: 'Fisher', title: 'loi de Fisher', tag: 'Rapport de deux variances',
+  params: [
+    { key: 'd1', label: 'Degrés de liberté du numérateur', sym: 'd₁', min: 1, max: 100, step: 1, value: 5, int: true },
+    { key: 'd2', label: 'Degrés de liberté du dénominateur', sym: 'd₂', min: 1, max: 100, step: 1, value: 10, int: true }
+  ],
+  notation: P => `𝓕(${P.d1} ; ${P.d2})`, genNotation: '𝓕(<var>d</var>₁ ; <var>d</var>₂)',
+  variable: `${vr('X')} = (${vr('U')}/${vr('d')}₁) / (${vr('V')}/${vr('d')}₂) avec ${vr('U')} ∼ χ²(${vr('d')}₁) et ${vr('V')} ∼ χ²(${vr('d')}₂) indépendantes.`,
+  lede: 'La loi de Fisher (ou de Fisher-Snedecor) est la loi d\'un rapport de deux khi-deux divisés par leurs degrés de liberté. Elle sert à comparer des variances.',
+  when: 'Analyse de la variance (ANOVA), test d\'égalité de deux variances, test global d\'une régression.',
+  support: () => ({ min: 0, max: Infinity }), supportTxt: () => '[0 ; +∞[', genSupport: '[0 ; +∞[',
+  pdf: (x, P) => {
+    const a = P.d1, b = P.d2;
+    if (x < 0) return 0;
+    if (x === 0) return a < 2 ? Infinity : a === 2 ? 1 : 0;
+    return Math.exp(0.5 * (a * Math.log(a * x) + b * Math.log(b) - (a + b) * Math.log(a * x + b)) - Math.log(x) - lbeta(a / 2, b / 2));
+  },
+  cdf: (x, P) => x <= 0 ? 0 : betaI(P.d1 / 2, P.d2 / 2, P.d1 * x / (P.d1 * x + P.d2)),
+  mean: P => P.d2 > 2 ? P.d2 / (P.d2 - 2) : NaN,
+  variance: P => { const a = P.d1, b = P.d2; return b > 4 ? 2 * b * b * (a + b - 2) / (a * (b - 2) ** 2 * (b - 4)) : b > 2 ? Infinity : NaN; },
+  skew: P => { const a = P.d1, b = P.d2; return b > 6 ? (2 * a + b - 2) * Math.sqrt(8 * (b - 4)) / ((b - 6) * Math.sqrt(a * (a + b - 2))) : NaN; },
+  kurt: P => { const a = P.d1, b = P.d2; return b > 8 ? 12 * (a * (5 * b - 22) * (a + b - 2) + (b - 4) * (b - 2) ** 2) / (a * (b - 6) * (b - 8) * (a + b - 2)) : NaN; },
+  mode: P => P.d1 > 2 ? (P.d1 - 2) / P.d1 * P.d2 / (P.d2 + 2) : 0,
+  F: {
+    pdf: 'f(x) = √( (d₁x)<sup>d₁</sup> d₂<sup>d₂</sup> / (d₁x + d₂)<sup>d₁ + d₂</sup> ) / (x B(d₁/2, d₂/2)) pour x &gt; 0',
+    cdf: 'F(x) = I<sub>d₁x/(d₁x + d₂)</sub>(d₁/2, d₂/2), lue dans la table de Fisher',
+    mean: 'E(X) = d₂ / (d₂ − 2) si d₂ &gt; 2', variance: 'V(X) = 2d₂²(d₁ + d₂ − 2) / (d₁(d₂ − 2)²(d₂ − 4)) si d₂ &gt; 4',
+    mgf: 'n\'existe pas'
+  },
+  Fexpr: (x, P) => `F(${fmt(x)})`,
+  view: P => [0, Math.max(2.5, Math.min(quantile(CLAWS[8], P, 0.99), 8))],
+  mech: 'On simule <var>U</var> ∼ χ²(<var>d</var>₁) et <var>V</var> ∼ χ²(<var>d</var>₂) (sommes de carrés de normales), puis <var>X</var> = (<var>U</var>/<var>d</var>₁) / (<var>V</var>/<var>d</var>₂).',
+  sample(P, t) { const u = rchi2(P.d1), w = rchi2(P.d2), x = (u / P.d1) / (w / P.d2); if (t) t.html = `U = ${fmt(u, 3)}, V = ${fmt(w, 3)} → X = (U/${P.d1}) / (V/${P.d2}) = <b>${fmt(x, 3)}</b>`; return x; },
+  overlays: [],
+  examples: [
+    { title: 'Analyse de la variance', text: 'On compare 4 groupes de 6 personnes. La statistique de l\'ANOVA suit 𝓕(3 ; 20) sous l\'hypothèse « mêmes moyennes ». On rejette au risque 5 % au-delà du quantile d\'ordre 0,95.', params: { d1: 3, d2: 20 }, q: { type: 'q', a: 0.95 }, ask: 'Seuil critique au risque 5 %' },
+    { title: 'Comparer deux variances', text: 'Deux échantillons de 11 mesures donnent un rapport de variances s₁²/s₂² = 3. Sous l\'hypothèse de variances égales, ce rapport suit 𝓕(10 ; 10).', params: { d1: 10, d2: 10 }, q: { type: 'ge', a: 3 }, ask: 'Probabilité d\'observer un rapport au moins égal à 3' }
+  ],
+  props: [
+    'Si <var>X</var> ∼ 𝓕(<var>d</var>₁ ; <var>d</var>₂), alors 1/<var>X</var> ∼ 𝓕(<var>d</var>₂ ; <var>d</var>₁). C\'est ainsi qu\'on lit les quantiles inférieurs dans les tables.',
+    'Si <var>T</var> ∼ 𝓣(<var>k</var>), alors <var>T</var>² ∼ 𝓕(1 ; <var>k</var>).',
+    'Rapport de variances : pour deux échantillons normaux indépendants de tailles <var>n</var>₁ et <var>n</var>₂ et de même variance, <var>S</var>₁²/<var>S</var>₂² ∼ 𝓕(<var>n</var>₁ − 1 ; <var>n</var>₂ − 1).',
+    'Quand <var>d</var>₂ → ∞, <var>d</var>₁<var>X</var> tend vers une loi χ²(<var>d</var>₁).'
+  ]
+}
+];
+LAWS.push(...CLAWS);
+
+// ---------- Lecture d'une loi saisie au clavier ----------
+const NAMES = [
+  ['bernoulli', ['bernoulli', 'ber', 'bern']],
+  ['binomial', ['binomiale', 'binomial', 'bin', 'binom', 'b']],
+  ['geometric', ['geometrique', 'geometric', 'geo', 'geom', 'g']],
+  ['poisson', ['poisson', 'pois', 'p']],
+  ['hypergeometric', ['hypergeometrique', 'hypergeometric', 'hyper', 'hypergeo', 'h', 'hg']],
+  ['uniform', ['uniforme', 'uniform', 'unif', 'u', 'uniforme discrete']],
+  ['pascal', ['pascal', 'pa', 'binomiale negative', 'negative binomial', 'binomial negative', 'nb', 'bn']],
+  ['cuniform', ['uniforme continue', 'continuous uniform']],
+  ['exponential', ['exponentielle', 'exponential', 'exp', 'expo', 'e']],
+  ['normal', ['normale', 'normal', 'gauss', 'laplace-gauss', 'gaussienne', 'n']],
+  ['lognormal', ['log-normale', 'lognormale', 'log normale', 'lognormal', 'log-normal', 'ln', 'lognorm']],
+  ['gamma', ['gamma', 'ga', 'erlang']],
+  ['beta', ['beta', 'be']],
+  ['chi2', ['khideux']],
+  ['student', ['student', 't', 'st']],
+  ['fisher', ['fisher', 'f', 'fisher-snedecor', 'snedecor']]
+];
+const WANT = { bernoulli: [1], binomial: [2], geometric: [1], poisson: [1], hypergeometric: [3], uniform: [1, 2], pascal: [2],
+  cuniform: [2], exponential: [1], normal: [2], lognormal: [2], gamma: [2], beta: [2], chi2: [1], student: [1], fisher: [2] };
+
+function splitArgs(s, mode) {
+  s = s.replace(/[a-zλμσαβ]+\s*=/g, ' ').replace(/[()\[\]{}]/g, ' ').trim();
+  if (!s) return [];
+  let parts;
+  if (mode === 'fr') parts = s.split(/;|\s+|,\s+/).map(x => x.replace(',', '.'));
+  else parts = s.split(/[;,\s]+/);
+  return parts.filter(x => x !== '').map(x => (x.includes('/') ? x.split('/').reduce((a, b) => Number(a) / Number(b)) : Number(x)));
+}
+
+function assign(id, args) {
+  const P = {}; const notes = [];
+  switch (id) {
+    case 'bernoulli': case 'geometric': P.p = args[0]; break;
+    case 'poisson': P.lambda = args[0]; break;
+    case 'binomial': P.n = args[0]; P.p = args[1]; break;
+    case 'pascal': P.r = args[0]; P.p = args[1]; break;
+    case 'uniform': if (args.length === 1) { P.a = 1; P.b = args[0]; } else { P.a = args[0]; P.b = args[1]; } break;
+    case 'hypergeometric':
+      if (args[2] > 0 && args[2] < 1 && !Number.isInteger(args[2])) { P.N = args[0]; P.n = args[1]; P.K = Math.round(args[2] * args[0]); notes.push('paramètres lus comme 𝓗(N ; n ; p)'); }
+      else { P.N = args[0]; P.K = args[1]; P.n = args[2]; }
+      break;
+    case 'cuniform': P.a = args[0]; P.b = args[1]; break;
+    case 'exponential': P.lambda = args[0]; break;
+    case 'normal': case 'lognormal':
+      P.mu = args[0]; P.sigma = Math.sqrt(Math.max(args[1], 0)); notes.push('le second paramètre est lu comme la variance σ²'); break;
+    case 'gamma': P.k = args[0]; P.lambda = args[1]; notes.push('paramètres lus comme Γ(k ; λ), λ étant le taux'); break;
+    case 'beta': P.alpha = args[0]; P.beta = args[1]; break;
+    case 'chi2': case 'student': P.k = args[0]; break;
+    case 'fisher': P.d1 = args[0]; P.d2 = args[1]; break;
+  }
+  return { id, raw: P, notes };
+}
+
+function parseLaw(input) {
+  const orig = input;
+  let s = input.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  s = s.replace(/\s+(de\s+|des\s+)?parametres?\b/g, ' ').replace(/\s+(et|avec)\s+/g, ' ');
+  s = s.replace(/^x\s*(~|∼|↪|->|suit)\s*/, '').replace(/^(la\s+)?loi\s+(de\s+|du\s+|d')?/, '');
+  s = s.replace(/𝓑/g, 'b').replace(/𝓟/g, 'p').replace(/𝓖/g, 'g').replace(/𝓗/g, 'h').replace(/𝓤/g, 'u').replace(/𝓝/g, 'n').replace(/𝓔/g, 'e').replace(/𝓣/g, 't').replace(/𝓕/g, 'f').replace(/𝓛𝓝/g, 'ln')
+    .replace(/γ|г/g, 'gamma').replace(/β/g, 'beta').replace(/^(khi|chi|χ|x)[\s-]*(2|²|deux|carre|square)/, 'khideux').replace(/^cauchy\b/, 'student 1');
+  if (!s) return { err: 'Écrivez une loi, par exemple B(20 ; 0,3), Poisson(4) ou N(0 ; 1).' };
+  const m = s.match(/^([a-z][a-z\s'-]*?)\s*(?=[(\[\d.,;-]|$)(.*)$/);
+  const list = 'Exemples : B(20 ; 0,3), Poisson(4), G(0,2), H(50 ; 10 ; 8), U(1 ; 6), Pascal(3 ; 0,3), N(0 ; 1), E(0,5), U([0 ; 1]), LN(0 ; 0,25), Gamma(2 ; 1), Bêta(2 ; 5), khi2(4), Student(5), F(5 ; 10).';
+  if (!m) return { err: 'Je n\'ai pas reconnu de nom de loi. ' + list };
+  const name = m[1].trim().replace(/\s+/g, ' ');
+  const rest = m[2];
+  let ids = NAMES.filter(([, al]) => al.includes(name)).map(([id]) => id);
+  if (!ids.length) return { err: `Loi « ${m[1].trim()} » inconnue. ${list}` };
+  if (name === 'b') ids = ['bernoulli', 'binomial'];
+  const variants = [splitArgs(rest, 'fr'), splitArgs(rest, 'en')];
+  if (!variants[0].length) return { id: ids[ids.length - 1], raw: {}, notes: ['paramètres par défaut, à régler dans le panneau'] };
+  for (const args of variants) {
+    if (args.some(x => !isFinite(x))) continue;
+    for (let id of ids) {
+      if (!WANT[id].includes(args.length)) continue;
+      // U(a ; b) : continue si l'on écrit un intervalle avec crochets ou si une borne n'est pas entière
+      if (id === 'uniform' && args.length === 2 && (/[\[\]]/.test(orig) || args.some(x => !Number.isInteger(x)))) id = 'cuniform';
+      return assign(id, args);
+    }
+  }
+  const L = getLaw(ids[ids.length - 1]);
+  const nb = WANT[L.id].join(' ou ');
+  return { err: `La ${lawTitle(L)} attend ${nb} paramètre${nb === '1' ? '' : 's'} (${L.params.map(q => q.sym).join(' ; ')}). Séparez-les par « ; », par exemple ${L.notation(constrain(L, { ...Object.fromEntries(L.params.map(q => [q.key, q.value])), ...L.examples[0].params }))}.` };
+}
+</script>
+
+<script>
+const $ = s => document.querySelector(s);
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isC = L => L.kind === 'continuous';
+const defaults = L => Object.fromEntries(L.params.map(q => [q.key, q.value]));
+
+const state = { law: LAWS[1], params: {}, overlay: 'none', calc: { type: 'le', a: 8, b: 10 }, sim: null, anim: null };
+LAWS.forEach(L => { state.params[L.id] = constrain(L, defaults(L)); });
+try { const saved = localStorage.getItem('atlas-law'); if (saved && getLaw(saved)) state.law = getLaw(saved); } catch (e) {}
+if (location.hash && getLaw(location.hash.slice(1))) state.law = getLaw(location.hash.slice(1));
+
+const fmtMoment = x => Number.isNaN(x) ? 'n\'existe pas' : fmt(Math.abs(x) < 1e-10 ? 0 : x);
+
+// ---------- Graphiques SVG ----------
+function niceStep(range, count) {
+  const raw = range / Math.max(count, 1); const mag = 10 ** Math.floor(Math.log10(raw)); const r = raw / mag;
+  return (r <= 1 ? 1 : r <= 2 ? 2 : r <= 2.5 ? 2.5 : r <= 5 ? 5 : 10) * mag;
+}
+function ticks(min, max, count, integer) {
+  let st = niceStep(max - min || 1, count); if (integer) st = Math.max(1, Math.round(st));
+  const out = []; for (let x = Math.ceil(min / st - 1e-9) * st; x <= max + 1e-9; x += st) out.push(+x.toFixed(10)); return out;
+}
+function frame({ W = 480, H = 290, xmin, xmax, ymin = 0, ymax, xInt = true, yFmt = y => fmtTxt(y, 3), xLabel = '', yLabel = '' }) {
+  const m = { l: 50, r: 12, t: 14, b: xLabel ? 44 : 30 };
+  const sx = x => m.l + (x - xmin) / (xmax - xmin) * (W - m.l - m.r);
+  const sy = y => H - m.b - (y - ymin) / (ymax - ymin || 1) * (H - m.t - m.b);
+  let g = '';
+  for (const y of ticks(ymin, ymax, 5)) g += `<line class="ax" x1="${m.l}" x2="${W - m.r}" y1="${sy(y)}" y2="${sy(y)}"/><text class="tk" x="${m.l - 6}" y="${sy(y) + 4}" text-anchor="end">${yFmt(y)}</text>`;
+  g += `<line class="ax0" x1="${m.l}" x2="${W - m.r}" y1="${sy(ymin)}" y2="${sy(ymin)}"/>`;
+  const xt = xInt ? ticks(Math.ceil(xmin), Math.floor(xmax), 9, true) : ticks(xmin, xmax, 7, false);
+  for (const x of xt) g += `<line class="ax0" x1="${sx(x)}" x2="${sx(x)}" y1="${sy(ymin)}" y2="${sy(ymin) + 4}"/><text class="tk" x="${sx(x)}" y="${sy(ymin) + 17}" text-anchor="middle">${x.toLocaleString('fr-FR', { maximumFractionDigits: 3 })}</text>`;
+  if (xLabel) g += `<text class="lbl" x="${(m.l + W - m.r) / 2}" y="${H - 6}" text-anchor="middle">${xLabel}</text>`;
+  const id = 'c' + Math.random().toString(36).slice(2, 8);
+  const clip = `<defs><clipPath id="${id}"><rect x="${m.l}" y="${m.t - 2}" width="${W - m.l - m.r}" height="${H - m.t - m.b + 2}"/></clipPath></defs>`;
+  return { W, H, m, sx, sy, g, clipId: id, open: `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${yLabel}">${clip}` };
+}
+const pathOf = (pts, F) => pts.map(([x, y], j) => `${j ? 'L' : 'M'}${F.sx(x).toFixed(1)},${F.sy(y).toFixed(1)}`).join('');
+
+// --- discrètes ---
+function viewRange(T) {
+  const n = T.ks.length;
+  if (n <= 16) return [0, n - 1];
+  let i0 = 0; while (i0 < n - 1 && T.cs[i0] < 2e-4) i0++;
+  let i1 = n - 1; while (i1 > i0 && T.cs[i1 - 1] > 1 - 2e-4) i1--;
+  if (i1 - i0 < 6) i1 = Math.min(n - 1, i0 + 6);
+  return [i0, i1];
+}
+function pmfChart(L, P, T, q) {
+  const [i0, i1] = viewRange(T);
+  const ks = T.ks.slice(i0, i1 + 1), ps = T.ps.slice(i0, i1 + 1);
+  const ov = L.overlays.find(o => o.id === state.overlay);
+  const ovf = ov ? ov.fn(P) : null;
+  let ymax = Math.max(...ps);
+  if (ovf) for (let k = ks[0]; k <= ks[ks.length - 1]; k++) ymax = Math.max(ymax, ovf(k));
+  ymax *= 1.08;
+  const F = frame({ xmin: ks[0] - 0.6, xmax: ks[ks.length - 1] + 0.6, ymax, xLabel: 'k', yLabel: 'Loi de probabilité' });
+  const bw = Math.max(1, Math.min(26, (F.sx(1) - F.sx(0)) * 0.62));
+  let out = F.open + F.g;
+  const anyHl = q && ks.some(k => inEvent(k, q));
+  ks.forEach((k, i) => {
+    const x = F.sx(k), y = F.sy(ps[i]), y0 = F.sy(0);
+    const cls = anyHl ? (inEvent(k, q) ? 'bar hl' : 'bar dim') : 'bar';
+    out += `<rect class="${cls}" x="${x - bw / 2}" y="${y}" width="${bw}" height="${Math.max(0, y0 - y)}" rx="${bw > 6 ? 2 : 0}"><title>P(X = ${k}) = ${fmtTxt(ps[i], 5)}</title></rect>`;
+  });
+  if (ovf) {
+    if (ov.kind === 'points') ks.forEach(k => { out += `<circle class="ov-pt" cx="${F.sx(k)}" cy="${F.sy(ovf(k))}" r="${Math.min(4.5, Math.max(2.5, bw / 3))}"><title>approximation : ${fmtTxt(ovf(k), 5)}</title></circle>`; });
+    else {
+      const a = ks[0] - 0.6, b = ks[ks.length - 1] + 0.6, pts = [];
+      for (let j = 0; j <= 240; j++) { const x = a + (b - a) * j / 240; pts.push([x, ovf(x)]); }
+      out += `<path class="ov-line" d="${pathOf(pts, F)}"/>`;
+    }
+  }
+  return out + '</svg>';
+}
+function cdfChart(L, P, T) {
+  const [i0, i1] = viewRange(T);
+  const ks = T.ks.slice(i0, i1 + 1), cs = T.cs.slice(i0, i1 + 1);
+  const pad = Math.max(1, Math.round((ks[ks.length - 1] - ks[0]) * 0.06));
+  const xmin = ks[0] - pad, xmax = ks[ks.length - 1] + pad;
+  const F = frame({ xmin, xmax, ymax: 1.04, xLabel: 'x', yLabel: 'Fonction de répartition' });
+  let out = F.open + F.g;
+  const before = i0 > 0 ? T.cs[i0 - 1] : 0;
+  let d = `M${F.sx(xmin)},${F.sy(before)}L${F.sx(ks[0])},${F.sy(before)}`;
+  const dots = ks.length <= 60; let circles = '';
+  ks.forEach((k, i) => {
+    const x2 = i < ks.length - 1 ? ks[i + 1] : xmax;
+    d += `M${F.sx(k)},${F.sy(cs[i])}L${F.sx(x2)},${F.sy(cs[i])}`;
+    if (dots) {
+      circles += `<circle class="step-open" cx="${F.sx(k)}" cy="${F.sy(i ? cs[i - 1] : before)}" r="3.2"/>`;
+      circles += `<circle class="step-dot" cx="${F.sx(k)}" cy="${F.sy(cs[i])}" r="3.4"><title>F(${k}) = ${fmtTxt(cs[i], 5)}</title></circle>`;
+    }
+  });
+  return out + `<path class="step" d="${d}"/>` + circles + '</svg>';
+}
+
+// --- continues ---
+function cview(L, P) {
+  if (L.view) return L.view(P);
+  const s = L.support(P);
+  return [isFinite(s.min) ? s.min : quantile(L, P, 0.001), isFinite(s.max) ? s.max : quantile(L, P, 0.999)];
+}
+function densityCap(vals) {
+  const f = vals.filter(y => isFinite(y)).sort((a, b) => a - b);
+  if (!f.length) return 1;
+  const top = f[f.length - 1], p90 = f[Math.floor(0.9 * (f.length - 1))];
+  return Math.min(top, 3 * p90) * 1.08 || 1;
+}
+function eventInterval(L, P, q, lo, hi) {
+  switch (q.type) {
+    case 'le': case 'lt': return [lo, Math.min(hi, q.a)];
+    case 'ge': case 'gt': return [Math.max(lo, q.a), hi];
+    case 'between': return [Math.max(lo, q.a), Math.min(hi, q.b)];
+    case 'q': return (q.a > 0 && q.a < 1) ? [lo, Math.min(hi, quantile(L, P, q.a))] : null;
+  }
+  return null;
+}
+function densityChart(L, P, q) {
+  const [lo, hi] = cview(L, P); const N = 320;
+  const xs = Array.from({ length: N + 1 }, (_, j) => lo + (hi - lo) * j / N);
+  const ys = xs.map(x => L.pdf(x, P));
+  const ov = L.overlays.find(o => o.id === state.overlay); const ovf = ov ? ov.fn(P) : null;
+  const ymax = densityCap(ovf ? ys.concat(xs.map(ovf)) : ys);
+  const F = frame({ xmin: lo, xmax: hi, ymax, xInt: false, xLabel: 'x', yLabel: 'Densité' });
+  const clampY = y => isFinite(y) ? Math.min(y, ymax * 3) : ymax * 3;
+  const pts = xs.map((x, j) => [x, clampY(ys[j])]);
+  let out = F.open + F.g + `<g clip-path="url(#${F.clipId})">`;
+  out += `<path class="dens-area" d="${pathOf([[lo, 0], ...pts, [hi, 0]], F)}Z"/>`;
+  const iv = q && eventInterval(L, P, q, lo, hi);
+  if (iv && iv[1] > iv[0]) {
+    const hp = []; for (let j = 0; j <= 160; j++) { const x = iv[0] + (iv[1] - iv[0]) * j / 160; hp.push([x, clampY(L.pdf(x, P))]); }
+    out += `<path class="dens-hl" d="${pathOf([[iv[0], 0], ...hp, [iv[1], 0]], F)}Z"/>`;
+  }
+  out += `<path class="dens-line" d="${pathOf(pts, F)}"/>`;
+  if (ovf) out += `<path class="ov-line" d="${pathOf(xs.map(x => [x, clampY(ovf(x))]), F)}"/>`;
+  out += '</g>';
+  return out + '</svg>';
+}
+function ccdfChart(L, P, q) {
+  const [lo, hi] = cview(L, P); const N = 320;
+  const F = frame({ xmin: lo, xmax: hi, ymax: 1.04, xInt: false, xLabel: 'x', yLabel: 'Fonction de répartition' });
+  const pts = Array.from({ length: N + 1 }, (_, j) => { const x = lo + (hi - lo) * j / N; return [x, L.cdf(x, P)]; });
+  let out = F.open + F.g + `<g clip-path="url(#${F.clipId})"><path class="step" d="${pathOf(pts, F)}"/>`;
+  const mark = (x, y) => `<path class="guide" d="M${F.sx(lo)},${F.sy(y)}L${F.sx(x)},${F.sy(y)}L${F.sx(x)},${F.sy(0)}"/><circle class="guide-dot" cx="${F.sx(x)}" cy="${F.sy(y)}" r="4"/>`;
+  if (q) {
+    if (q.type === 'q' && q.a > 0 && q.a < 1) out += mark(quantile(L, P, q.a), q.a);
+    else if (q.type === 'between') { out += mark(q.a, L.cdf(q.a, P)) + mark(q.b, L.cdf(q.b, P)); }
+    else if (q.type !== 'q') out += mark(q.a, L.cdf(q.a, P));
+  }
+  return out + '</g></svg>';
+}
+
+// --- simulation ---
+function simChartD(L, P, T) {
+  const S = state.sim;
+  const [i0, i1] = viewRange(T);
+  let kmin = T.ks[i0], kmax = T.ks[i1];
+  if (S.n) { kmin = Math.min(kmin, S.min); kmax = Math.max(kmax, S.max); }
+  let ymax = 0; const th = k => L.pmf(k, P);
+  for (let k = kmin; k <= kmax; k++) ymax = Math.max(ymax, th(k), S.n ? (S.counts.get(k) || 0) / S.n : 0);
+  ymax *= 1.1;
+  const F = frame({ xmin: kmin - 0.6, xmax: kmax + 0.6, ymax, xLabel: 'k', yLabel: 'Fréquences observées' });
+  const bw = Math.max(1, Math.min(26, (F.sx(1) - F.sx(0)) * 0.62));
+  let out = F.open + F.g;
+  if (S.n) for (const [k, c] of S.counts) {
+    if (k < kmin || k > kmax) continue;
+    const f = c / S.n, y = F.sy(f);
+    out += `<rect class="emp" x="${F.sx(k) - bw / 2}" y="${y}" width="${bw}" height="${F.sy(0) - y}"><title>k = ${k} : ${c} tirage${c > 1 ? 's' : ''}, fréquence ${fmtTxt(f, 4)} (théorie ${fmtTxt(th(k), 4)})</title></rect>`;
+  }
+  const tw = Math.max(bw + 4, 5);
+  for (let k = kmin; k <= kmax; k++) { const p = th(k); if (p > 0) out += `<line class="th-tick" x1="${F.sx(k) - tw / 2}" x2="${F.sx(k) + tw / 2}" y1="${F.sy(p)}" y2="${F.sy(p)}"/>`; }
+  if (!S.n) out += `<text class="lbl" x="${(F.m.l + F.W) / 2}" y="${F.H / 2 - 30}" text-anchor="middle">Lancez des tirages pour voir apparaître les fréquences.</text>`;
+  return out + '</svg>';
+}
+function simChartC(L, P) {
+  const S = state.sim; const [lo, hi] = cview(L, P); const B = 40, w = (hi - lo) / B;
+  const counts = new Array(B).fill(0); let outside = 0;
+  for (const x of S.samples) { const i = Math.floor((x - lo) / w); if (i >= 0 && i < B) counts[i]++; else if (x === hi) counts[B - 1]++; else outside++; }
+  const dens = counts.map(c => S.n ? c / (S.n * w) : 0);
+  const xs = Array.from({ length: 241 }, (_, j) => lo + (hi - lo) * j / 240);
+  const ys = xs.map(x => L.pdf(x, P));
+  const ymax = Math.max(densityCap(ys), ...dens.map(d => Math.min(d, densityCap(ys) * 1.5)));
+  const F = frame({ xmin: lo, xmax: hi, ymax, xInt: false, xLabel: 'x', yLabel: 'Histogramme des tirages' });
+  let out = F.open + F.g + `<g clip-path="url(#${F.clipId})">`;
+  dens.forEach((d, i) => { if (!d) return; const x0 = F.sx(lo + i * w), x1 = F.sx(lo + (i + 1) * w), y = F.sy(d); out += `<rect class="emp" x="${x0 + 0.5}" y="${y}" width="${Math.max(0.5, x1 - x0 - 1)}" height="${F.sy(0) - y}"><title>[${fmtTxt(lo + i * w, 3)} ; ${fmtTxt(lo + (i + 1) * w, 3)}[ : ${counts[i]} tirages</title></rect>`; });
+  out += `<path class="th-line" d="${pathOf(xs.map((x, j) => [x, isFinite(ys[j]) ? Math.min(ys[j], ymax * 3) : ymax * 3]), F)}"/></g>`;
+  if (!S.n) out += `<text class="lbl" x="${(F.m.l + F.W) / 2}" y="${F.H / 2 - 30}" text-anchor="middle">Lancez des tirages pour voir apparaître l'histogramme.</text>`;
+  else if (outside) out += `<text class="lbl" x="${F.W - F.m.r - 4}" y="${F.m.t + 12}" text-anchor="end">${outside.toLocaleString('fr-FR')} tirage${outside > 1 ? 's' : ''} hors du cadre</text>`;
+  return out + '</svg>';
+}
+function runChart(L, P) {
+  const S = state.sim, m = L.mean(P), sd = Math.sqrt(L.variance(P));
+  const pts = S.run, nmax = Math.max(10, S.n);
+  const finiteM = isFinite(m), finiteSd = isFinite(sd);
+  let center, span;
+  if (finiteM) {
+    center = m;
+    span = finiteSd ? Math.max(sd * 1.96 / Math.sqrt(Math.max(5, Math.min(nmax, 20))), 1e-6) : 1e-6;
+    pts.forEach(([n, y]) => { if (n >= 5) span = Math.max(span, Math.abs(y - m)); });
+    if (!finiteSd && span < 1e-5) span = 1;
+  } else {
+    const ys = pts.filter(([n]) => n >= 5).map(([, y]) => y);
+    const a = ys.length ? Math.min(...ys) : -1, b = ys.length ? Math.max(...ys) : 1;
+    center = (a + b) / 2; span = Math.max((b - a) / 2, 0.5);
+  }
+  span *= 1.15;
+  const F = frame({ xmin: 0, xmax: nmax, ymin: center - span, ymax: center + span, xInt: true, xLabel: 'nombre de tirages n', yLabel: 'Moyenne des tirages', yFmt: y => fmtTxt(y, 2) });
+  let out = F.open + F.g + `<g clip-path="url(#${F.clipId})">`;
+  if (finiteM && finiteSd && sd > 0) {
+    let up = '', dn = '';
+    for (let j = 0; j <= 160; j++) { const n = Math.max(1, nmax * j / 160); const h = 1.96 * sd / Math.sqrt(n); up += `${j ? 'L' : 'M'}${F.sx(n).toFixed(1)},${F.sy(m + h).toFixed(1)}`; dn = `L${F.sx(n).toFixed(1)},${F.sy(m - h).toFixed(1)}` + dn; }
+    out += `<path class="band" d="${up}${dn}Z"/>`;
+  }
+  if (finiteM) out += `<line class="mean-line" x1="${F.m.l}" x2="${F.W - F.m.r}" y1="${F.sy(m)}" y2="${F.sy(m)}"/>`;
+  if (pts.length) out += `<path class="run" d="${pathOf(pts, F)}"/>`;
+  out += '</g>';
+  if (finiteM) out += `<text class="lbl" x="${F.W - F.m.r - 4}" y="${F.sy(m) - 6}" text-anchor="end" style="fill:var(--theory)">E(X) = ${fmtTxt(m, 3)}</text>`;
+  else out += `<text class="lbl" x="${F.W - F.m.r - 4}" y="${F.m.t + 12}" text-anchor="end" style="fill:var(--theory)">E(X) n'existe pas : la moyenne ne se stabilise pas</text>`;
+  return out + '</svg>';
+}
+
+// ---------- Rendu ----------
+function current() { const L = state.law, P = state.params[L.id]; return { L, P, T: isC(L) ? null : table(L, P) }; }
+
+function renderNav() {
+  const btn = L => `<button type="button" data-law="${L.id}" aria-current="${L === state.law}"><span class="n-name">${L.name}</span><span class="n-tag">${L.tag}</span></button>`;
+  $('#nav-d').innerHTML = LAWS.filter(L => !isC(L)).map(btn).join('');
+  $('#nav-c').innerHTML = LAWS.filter(isC).map(btn).join('');
+}
+
+function renderParams() {
+  const L = state.law, P = state.params[L.id];
+  $('#params').innerHTML = L.params.map(q => {
+    const mx = typeof q.max === 'function' ? q.max(P) : q.max;
+    return `<div class="param"><div class="param-head"><label for="pr-${q.key}">${q.label}</label><span class="sym">${q.sym}</span></div>
+      <div class="param-row"><input type="range" id="pr-${q.key}" data-key="${q.key}" min="${q.min}" max="${mx}" step="${q.int ? 1 : (q.key === 'p' ? 0.001 : q.step)}" value="${P[q.key]}" aria-label="${q.label}">
+      <input type="number" id="pn-${q.key}" data-key="${q.key}" min="${q.min}" max="${mx}" step="${q.step}" value="${+P[q.key].toFixed(4)}" aria-label="${q.label} (valeur)"></div></div>`;
+  }).join('');
+  syncParamInputs();
+}
+function syncParamInputs(skip) {
+  const L = state.law, P = state.params[L.id];
+  for (const q of L.params) {
+    const mx = typeof q.max === 'function' ? q.max(P) : q.max;
+    const r = $(`#pr-${q.key}`), n = $(`#pn-${q.key}`);
+    r.max = mx; n.max = mx;
+    if (r !== skip) r.value = P[q.key];
+    if (n !== skip) n.value = +P[q.key].toFixed(4);
+  }
+  $('#notation').innerHTML = `<var>X</var> ∼ ${L.notation(P)}`;
+}
+
+function renderHero(L) {
+  $('#hero').innerHTML = `<div class="eyebrow">${isC(L) ? 'Loi continue' : 'Loi discrète'}</div><h1>${lawTitle(L).replace(/^l/, 'L')}</h1>
+    <p class="lede">${L.lede}</p>
+    <div class="hero-grid"><div><h3>Variable étudiée</h3><p>${L.variable}</p></div><div><h3>Quand l'utiliser</h3><p>${L.when}</p></div></div>`;
+}
+
+function generalSupport(L) {
+  return L.genSupport || {
+    bernoulli: '{0, 1}', binomial: '{0, 1, …, <var>n</var>}', geometric: 'ℕ* = {1, 2, 3, …}', poisson: 'ℕ = {0, 1, 2, …}',
+    hypergeometric: '{max(0, <var>n</var> − (<var>N</var> − <var>K</var>)), …, min(<var>n</var>, <var>K</var>)}',
+    uniform: '{<var>a</var>, <var>a</var> + 1, …, <var>b</var>}', pascal: '{<var>r</var>, <var>r</var> + 1, …}'
+  }[L.id];
+}
+const caracRow = ([a, b, f, val]) => `<tr><th scope="row">${a}${b ? `<small>${b}</small>` : ''}</th><td class="f">${f}</td><td class="v">${val}</td></tr>`;
+
+function renderCarac(L, P, T) {
+  if (isC(L)) return renderCaracC(L, P);
+  const S = stats(L, P, T);
+  const modesTxt = S.modes.length === T.ks.length && S.modes.length > 2 ? 'toutes les valeurs' : S.modes.map(k => k.toLocaleString('fr-FR')).join(' et ');
+  const rows = [
+    ['Notation', '', `<span class="math">${L.notation(P).replace(/\(.*$/, '')}(${L.params.map(q => `<var>${q.sym}</var>`).join(' ; ')})</span>`, `<span class="math">${L.notation(P)}</span>`],
+    ['Support', 'valeurs possibles de X', generalSupport(L), L.supportTxt(P)],
+    ['Loi de probabilité', 'P(X = k)', L.F.pmf, `P(X = ${S.modes[0]}) = ${fmt(L.pmf(S.modes[0], P))}`],
+    ['Fonction de répartition', 'F(x) = P(X ≤ x)', L.F.cdf, `F(${S.median}) = ${fmt(T.cs[T.ks.indexOf(S.median)])}`],
+    ['Espérance', 'valeur moyenne', L.F.mean, fmt(S.mean)],
+    ['Variance', 'dispersion', L.F.variance, fmt(S.variance)],
+    ['Écart-type', 'σ = √V(X)', 'σ = √V(X)', fmt(S.sd)],
+    ['Mode', 'valeur(s) la plus probable', 'valeur de k qui maximise P(X = k)', modesTxt],
+    ['Médiane', 'plus petit k tel que F(k) ≥ 1/2', 'partage la loi en deux moitiés', S.median.toLocaleString('fr-FR')],
+    ['Coefficient d\'asymétrie', 'E[(X − μ)³] / σ³', 'positif : queue étalée à droite ; nul : symétrique', isFinite(S.skew) ? fmt(Math.abs(S.skew) < 1e-10 ? 0 : S.skew) : 'non défini (σ = 0)'],
+    ['Aplatissement (excès)', 'E[(X − μ)⁴] / σ⁴ − 3', 'comparé à la loi normale (0)', isFinite(S.kurt) ? fmt(Math.abs(S.kurt) < 1e-10 ? 0 : S.kurt) : 'non défini (σ = 0)'],
+    ['Fonction génératrice', 'G(s) = E(s<sup>X</sup>)', L.F.pgf, '']
+  ];
+  $('#carac').innerHTML = rows.map(caracRow).join('');
+}
+function renderCaracC(L, P) {
+  const m = L.mean(P), V = L.variance(P);
+  const med = L.median ? L.median(P) : quantile(L, P, 0.5);
+  const q1 = quantile(L, P, 0.25), q3 = quantile(L, P, 0.75);
+  const mo = L.mode(P);
+  const at = isFinite(m) ? m : med;
+  const rows = [
+    ['Notation', '', `<span class="math">${L.genNotation}</span>`, `<span class="math">${L.notation(P)}</span>`],
+    ['Support', 'valeurs possibles de X', L.genSupport, L.supportTxt(P)],
+    ['Densité', 'f(x), avec P(a ≤ X ≤ b) = ∫ f', L.F.pdf, `f(${fmt(at, 3)}) = ${fmt(L.pdf(at, P))}`],
+    ['Fonction de répartition', 'F(x) = P(X ≤ x)', L.F.cdf, `F(${fmt(at, 3)}) = ${fmt(L.cdf(at, P))}`],
+    ['Espérance', 'valeur moyenne', L.F.mean, fmtMoment(m)],
+    ['Variance', 'dispersion', L.F.variance, fmtMoment(V)],
+    ['Écart-type', 'σ = √V(X)', 'σ = √V(X)', fmtMoment(Math.sqrt(V))],
+    ['Mode', 'maximum de la densité', 'valeur de x qui maximise f(x)', typeof mo === 'number' ? fmt(mo) : mo],
+    ['Médiane', 'F(x) = 1/2', 'partage la loi en deux moitiés', fmt(med)],
+    ['Quartiles', 'F(Q₁) = 1/4, F(Q₃) = 3/4', '50 % des valeurs sont entre Q₁ et Q₃', `${fmt(q1)} ; ${fmt(q3)}`],
+    ['Coefficient d\'asymétrie', 'E[(X − μ)³] / σ³', 'positif : queue étalée à droite ; nul : symétrique', fmtMoment(L.skew(P))],
+    ['Aplatissement (excès)', 'E[(X − μ)⁴] / σ⁴ − 3', 'comparé à la loi normale (0)', fmtMoment(L.kurt(P))],
+    ['Fonction génératrice des moments', 'M(t) = E(e<sup>tX</sup>)', L.F.mgf, '']
+  ];
+  $('#carac').innerHTML = rows.map(caracRow).join('');
+}
+
+function renderOverlayTools(L) {
+  if (!L.overlays.find(o => o.id === state.overlay)) state.overlay = 'none';
+  $('#overlay-tools').innerHTML = L.overlays.length ? `<label for="overlay">Superposer</label><select id="overlay"><option value="none">rien</option>${L.overlays.map(o => `<option value="${o.id}" ${o.id === state.overlay ? 'selected' : ''}>${o.label}</option>`).join('')}</select>` : '';
+}
+
+function renderChartText(L) {
+  const c = isC(L);
+  $('#pmf-title').textContent = c ? 'Densité de probabilité' : 'Loi de probabilité';
+  $('#pmf-cap').innerHTML = c
+    ? 'Courbe <span class="math">y = f(x)</span>. L\'aire sous la courbe entre <span class="math">a</span> et <span class="math">b</span> vaut <span class="math">P(a ≤ X ≤ b)</span> ; l\'aire surlignée correspond à l\'événement calculé plus bas.'
+    : 'Hauteur de chaque bâton : <span class="math">P(X = k)</span>. Les bâtons surlignés correspondent à l\'événement calculé plus bas.';
+  $('#cdf-cap').innerHTML = c
+    ? '<span class="math">F(x) = P(X ≤ x)</span> : une courbe continue et croissante de 0 à 1, dont la pente est la densité.'
+    : '<span class="math">F(x) = P(X ≤ x)</span> : une fonction en escalier qui saute de <span class="math">P(X = k)</span> en chaque valeur <span class="math">k</span>.';
+  $('#sim-title').textContent = c ? 'Histogramme des tirages' : 'Fréquences observées';
+  $('#sim-cap').innerHTML = c
+    ? 'Barres : histogramme des tirages, à l\'échelle de la densité (aire totale 1). Courbe rouge : densité théorique.'
+    : 'Barres : fréquences des tirages. Traits rouges : probabilités théoriques.';
+}
+
+function renderCharts(L, P, T) {
+  const q = state.calc;
+  if (isC(L)) { $('#chart-pmf').innerHTML = densityChart(L, P, q); $('#chart-cdf').innerHTML = ccdfChart(L, P, q); }
+  else { $('#chart-pmf').innerHTML = pmfChart(L, P, T, q); $('#chart-cdf').innerHTML = cdfChart(L, P, T); }
+  const ov = L.overlays.find(o => o.id === state.overlay);
+  $('#legend-pmf').innerHTML = `<span style="--c:var(--accent)">${isC(L) ? 'densité f(x)' : 'P(X = k)'}</span><span style="--c:var(--hl)">événement calculé</span>${ov ? `<span class="${ov.kind === 'points' ? 'dot' : ''}" style="--c:var(--ok)">${ov.label}</span>` : ''}`;
+}
+
+function eventTxt(q) {
+  return { eq: `P(X = ${fmt(q.a)})`, le: `P(X ≤ ${fmt(q.a)})`, lt: `P(X &lt; ${fmt(q.a)})`, ge: `P(X ≥ ${fmt(q.a)})`, gt: `P(X &gt; ${fmt(q.a)})`, between: `P(${fmt(q.a)} ≤ X ≤ ${fmt(q.b)})`, q: `x tel que P(X ≤ x) = ${fmt(q.a)}` }[q.type];
+}
+function simFreq(q) {
+  const S = state.sim; if (!S || !S.n) return '';
+  let c = 0;
+  if (S.samples) { const x0 = q.type === 'q' ? null : q; if (!x0) return ''; for (const x of S.samples) if (inEvent(x, q)) c++; }
+  else for (const [k, n] of S.counts) if (inEvent(k, q)) c += n;
+  return `<p class="note">Dans la simulation : ${c.toLocaleString('fr-FR')} tirage${c > 1 ? 's' : ''} sur ${S.n.toLocaleString('fr-FR')} réalisent l'événement, soit une fréquence de ${fmt(c / S.n)}.</p>`;
+}
+
+function renderCalc(L, P, T) {
+  if (isC(L)) return renderCalcC(L, P);
+  const q = state.calc; const p = prob(T, q);
+  let detail = '';
+  const closed = L.closed ? L.closed(q.type, q.a, P) : null;
+  if (q.type === 'eq') detail = L.detail(q.a, P);
+  else if (closed) detail = closed;
+  else {
+    const ks = T.ks.filter(k => inEvent(k, q));
+    if (ks.length === 0) detail = 'Aucune valeur du support ne réalise cet événement.';
+    else if (ks.length <= 4) detail = `On additionne ${ks.map(k => `P(X = ${k})`).join(' + ')} = ${ks.map(k => fmt(L.pmf(k, P))).join(' + ')}.`;
+    else if (q.type === 'ge' || q.type === 'gt') detail = `On passe par l'événement contraire : ${eventTxt(q)} = 1 − P(X ≤ ${q.type === 'ge' ? q.a - 1 : q.a}) = 1 − ${fmt(1 - p)}.`;
+    else detail = `On additionne les ${ks.length} probabilités P(X = k) pour k allant de ${ks[0]} à ${ks[ks.length - 1]}.`;
+  }
+  $('#calc-out').innerHTML = `<p class="calc-big">${eventTxt(q)} = <b>${fmt(p, 5)}</b></p><p class="calc-detail"><span class="math">${detail}</span></p><p class="note">Soit environ ${fmt(p * 100, 2)} % de chances.</p>${simFreq(q)}`;
+}
+function renderCalcC(L, P) {
+  const q = state.calc;
+  if (q.type === 'q') {
+    if (!(q.a > 0 && q.a < 1)) { $('#calc-out').innerHTML = '<p class="note">L\'ordre α du quantile doit être strictement compris entre 0 et 1 (par exemple 0,95).</p>'; return; }
+    const x = quantile(L, P, q.a);
+    $('#calc-out').innerHTML = `<p class="calc-big">x<sub>${fmt(q.a)}</sub> = <b>${fmt(x, 5)}</b></p><p class="calc-detail"><span class="math">C'est la valeur telle que P(X ≤ ${fmt(x, 4)}) = ${fmt(q.a)} : X a ${fmt(q.a * 100, 2)} % de chances d'être inférieure à ${fmt(x, 4)} et ${fmt((1 - q.a) * 100, 2)} % de chances d'être supérieure.</span></p><p class="note">On lit ce nombre dans les tables statistiques ; ici il est obtenu en inversant F numériquement.</p>`;
+    return;
+  }
+  const p = probC(L, P, q); let detail;
+  if (q.type === 'between') detail = `${eventTxt(q)} = F(${fmt(q.b)}) − F(${fmt(q.a)}) = ${fmt(L.cdf(q.b, P), 5)} − ${fmt(L.cdf(q.a, P), 5)}`;
+  else if (q.type === 'le' || q.type === 'lt') detail = `${eventTxt(q)} = F(${fmt(q.a)}) = ${L.Fexpr(q.a, P)}`;
+  else detail = `${eventTxt(q)} = 1 − F(${fmt(q.a)}) = 1 − ${L.Fexpr(q.a, P)} = 1 − ${fmt(L.cdf(q.a, P), 5)}`;
+  $('#calc-out').innerHTML = `<p class="calc-big">${eventTxt(q)} = <b>${fmt(p, 5)}</b></p><p class="calc-detail"><span class="math">${detail}</span></p><p class="note">Soit environ ${fmt(p * 100, 2)} % de chances. Pour une loi continue, P(X = x) = 0 : inégalités larges et strictes donnent le même résultat.</p>${simFreq(q)}`;
+}
+
+function answerOf(L, P, q) {
+  if (isC(L)) { const r = probC(L, P, q); return q.type === 'q' ? `x<sub>${fmt(q.a)}</sub> = <b>${fmt(r, 4)}</b>` : `${eventTxt(q)} = <b>${fmt(r, 4)}</b> &nbsp;<span class="note">(≈ ${fmt(r * 100, 1)} %)</span>`; }
+  const r = prob(table(L, P), q); return `${eventTxt(q)} = <b>${fmt(r, 4)}</b> &nbsp;<span class="note">(≈ ${fmt(r * 100, 1)} %)</span>`;
+}
+function renderExamples(L) {
+  $('#examples').innerHTML = L.examples.map((e, i) => {
+    const P = constrain(L, { ...state.params[L.id], ...e.params });
+    return `<article class="ex"><h3>${e.title}</h3><p>${e.text}</p><p class="q">${e.ask} :</p><p class="ans">${answerOf(L, P, e.q)}</p><p class="note">Paramètres : <span class="math">${L.notation(P)}</span></p><button class="btn ghost" type="button" data-ex="${i}">Charger l'exemple</button></article>`;
+  }).join('');
+}
+function renderProps(L) { $('#props').innerHTML = L.props.map(p => `<li>${p}</li>`).join(''); }
+
+function renderCalcOptions(L) {
+  const opts = isC(L)
+    ? [['le', 'P(X ≤ x)'], ['ge', 'P(X ≥ x)'], ['between', 'P(a ≤ X ≤ b)'], ['q', 'Quantile : x tel que P(X ≤ x) = α']]
+    : [['eq', 'P(X = k)'], ['le', 'P(X ≤ k)'], ['lt', 'P(X < k)'], ['ge', 'P(X ≥ k)'], ['gt', 'P(X > k)'], ['between', 'P(a ≤ X ≤ b)']];
+  $('#calc-type').innerHTML = opts.map(([v, t]) => `<option value="${v}">${t.replace('<', '&lt;').replace('>', '&gt;')}</option>`).join('');
+  const st = isC(L) ? 'any' : '1';
+  $('#calc-a').step = st; $('#calc-b').step = st;
+}
+function renderCalcInputs() {
+  const q = state.calc, c = isC(state.law);
+  $('#calc-type').value = q.type;
+  $('#calc-a').value = q.a; $('#calc-b').value = q.b ?? q.a;
+  const btw = q.type === 'between';
+  $('#calc-a-lbl').textContent = btw ? 'a =' : q.type === 'q' ? 'α =' : c ? 'x =' : 'k =';
+  $('#calc-b').hidden = !btw; $('#calc-b-lbl').hidden = !btw;
+}
+
+function refresh() {
+  const { L, P, T } = current();
+  syncParamInputs(document.activeElement);
+  renderCarac(L, P, T); renderCharts(L, P, T); renderCalc(L, P, T); renderExamples(L);
+}
+
+function selectLaw(id) {
+  stopAnim();
+  state.law = getLaw(id);
+  try { localStorage.setItem('atlas-law', id); } catch (e) {}
+  const L = state.law;
+  const e = L.examples[0]; state.calc = { ...e.q, b: e.q.b ?? (isC(L) ? e.q.a + 1 : e.q.a + 2) };
+  renderNav(); renderParams(); renderHero(L); renderOverlayTools(L); renderProps(L); renderChartText(L); renderCalcOptions(L); renderCalcInputs();
+  resetSim(); refresh();
+}
+
+// ---------- Simulation ----------
+function resetSim() {
+  stopAnim();
+  state.sim = { n: 0, sum: 0, sum2: 0, counts: new Map(), samples: isC(state.law) ? [] : null, run: [], min: Infinity, max: -Infinity, last: '' };
+  renderSim();
+}
+function draw(count) {
+  const { L, P } = current(); const S = state.sim;
+  for (let i = 0; i < count; i++) {
+    const t = i === count - 1 ? {} : null;
+    const x = L.sample(P, t);
+    S.n++; S.sum += x; S.sum2 += x * x;
+    if (S.samples) S.samples.push(x); else S.counts.set(x, (S.counts.get(x) || 0) + 1);
+    if (x < S.min) S.min = x; if (x > S.max) S.max = x;
+    if (S.n <= 300 || S.n % Math.ceil(S.n / 300) === 0) S.run.push([S.n, S.sum / S.n]);
+    if (t) S.last = t.html;
+  }
+}
+function renderSim() {
+  const { L, P, T } = current(); const S = state.sim;
+  $('#mech').innerHTML = `<b>Comment on simule :</b> ${L.mech}`;
+  $('#sim-last').innerHTML = S.n ? `Dernier tirage : ${S.last}` : 'Aucun tirage pour l\'instant.';
+  const m = S.n ? S.sum / S.n : NaN;
+  const vr = S.n > 1 ? Math.max(0, (S.sum2 - S.n * m * m) / (S.n - 1)) : NaN;
+  let dist = NaN, distLabel, distHint;
+  if (isC(L)) {
+    distLabel = 'Écart de Kolmogorov'; distHint = 'max |F̂ₙ(x) − F(x)|, tend vers <b>0</b>';
+    if (S.n) { const xs = Float64Array.from(S.samples).sort(); dist = 0; xs.forEach((x, i) => { const F = L.cdf(x, P); dist = Math.max(dist, (i + 1) / S.n - F, F - i / S.n); }); }
+  } else {
+    distLabel = 'Écart à la loi'; distHint = '½ Σ |fréquence − probabilité|, tend vers <b>0</b>';
+    if (S.n) { dist = 0; const seen = new Set(); T.ks.forEach((k, i) => { dist += Math.abs((S.counts.get(k) || 0) / S.n - T.ps[i]); seen.add(k); }); for (const [k, c] of S.counts) if (!seen.has(k)) dist += c / S.n; dist /= 2; }
+  }
+  const th = x => Number.isNaN(x) ? 'n\'existe pas' : fmtTxt(x, 3);
+  $('#sim-stats').innerHTML = `
+    <div class="stat"><div class="k">Tirages</div><div class="v">${S.n.toLocaleString('fr-FR')}</div><div class="t">taille de l'échantillon</div></div>
+    <div class="stat"><div class="k">Moyenne observée</div><div class="v">${S.n ? fmtTxt(m, 3) : '—'}</div><div class="t">théorie E(X) = <b>${th(L.mean(P))}</b></div></div>
+    <div class="stat"><div class="k">Variance observée</div><div class="v">${S.n > 1 ? fmtTxt(vr, 3) : '—'}</div><div class="t">théorie V(X) = <b>${th(L.variance(P))}</b></div></div>
+    <div class="stat"><div class="k">${distLabel}</div><div class="v">${S.n ? fmtTxt(dist, 3) : '—'}</div><div class="t">${distHint}</div></div>`;
+  $('#chart-sim').innerHTML = isC(L) ? simChartC(L, P) : simChartD(L, P, T);
+  $('#chart-run').innerHTML = runChart(L, P);
+}
+function stopAnim() { if (state.anim) { cancelAnimationFrame(state.anim.id); state.anim = null; } const b = $('#sim-anim'); if (b) b.textContent = 'Animer 5 000 tirages'; }
+function startAnim() {
+  if (reduceMotion) { draw(5000); renderSim(); refresh(); return; }
+  const target = state.sim.n + 5000;
+  state.anim = { id: 0 };
+  $('#sim-anim').textContent = 'Arrêter';
+  const step = () => {
+    const S = state.sim; const left = target - S.n;
+    if (left <= 0 || !state.anim) { stopAnim(); refresh(); return; }
+    draw(Math.min(left, Math.max(1, Math.floor(S.n / 25)))); renderSim();
+    state.anim.id = requestAnimationFrame(step);
+  };
+  state.anim.id = requestAnimationFrame(step);
+}
+
+// ---------- Événements ----------
+document.querySelector('.side').addEventListener('click', e => { const b = e.target.closest('[data-law]'); if (b) selectLaw(b.dataset.law); });
+$('#params').addEventListener('input', e => {
+  const k = e.target.dataset.key; if (!k) return;
+  const L = state.law, P = state.params[L.id];
+  const x = parseFloat(String(e.target.value).replace(',', '.')); if (!isFinite(x)) return;
+  P[k] = x; constrain(L, P);
+  resetSim(); refresh();
+});
+$('#params').addEventListener('change', () => syncParamInputs());
+$('#overlay-tools').addEventListener('change', e => { if (e.target.id === 'overlay') { state.overlay = e.target.value; const { L, P, T } = current(); renderCharts(L, P, T); } });
+function readCalc() {
+  const c = isC(state.law);
+  const rd = s => { const x = parseFloat(String($(s).value).replace(',', '.')); return isFinite(x) ? (c ? x : Math.round(x)) : 0; };
+  const prevType = state.calc.type, type = $('#calc-type').value;
+  state.calc = { type, a: rd('#calc-a'), b: rd('#calc-b') };
+  if (c && type === 'q' && prevType !== 'q') state.calc.a = 0.95;
+  if (c && prevType === 'q' && type !== 'q') { const { L, P } = current(); state.calc.a = +quantile(L, P, 0.5).toPrecision(3); state.calc.b = +quantile(L, P, 0.9).toPrecision(3); }
+  if (type === 'between' && state.calc.b < state.calc.a) [state.calc.a, state.calc.b] = [state.calc.b, state.calc.a];
+  if (prevType !== type || document.activeElement === $('#calc-type')) renderCalcInputs();
+  const { L, P, T } = current(); renderCharts(L, P, T); renderCalc(L, P, T);
+}
+['#calc-type', '#calc-a', '#calc-b'].forEach(s => $(s).addEventListener('change', readCalc));
+['#calc-a', '#calc-b'].forEach(s => $(s).addEventListener('input', () => { if ($(s).value !== '') readCalc(); }));
+document.querySelector('.sim-controls').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.draw) { stopAnim(); draw(+b.dataset.draw); renderSim(); const { L, P, T } = current(); renderCalc(L, P, T); }
+  else if (b.id === 'sim-reset') { resetSim(); refresh(); }
+  else if (b.id === 'sim-anim') { state.anim ? stopAnim() : startAnim(); }
+});
+$('#examples').addEventListener('click', e => {
+  const b = e.target.closest('[data-ex]'); if (!b) return;
+  const L = state.law, ex = L.examples[+b.dataset.ex];
+  state.params[L.id] = constrain(L, { ...state.params[L.id], ...ex.params });
+  state.calc = { ...ex.q, b: ex.q.b ?? (isC(L) ? ex.q.a + 1 : ex.q.a + 2) };
+  renderParams(); renderCalcInputs(); resetSim(); refresh();
+  document.querySelector('.calc').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+});
+$('#parse-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const msg = $('#parse-msg'); const r = parseLaw($('#law-input').value);
+  if (r.err) { msg.className = 'err'; msg.textContent = r.err; return; }
+  const L = getLaw(r.id);
+  const P = constrain(L, { ...state.params[L.id], ...r.raw });
+  const changed = Object.keys(r.raw).filter(k => Math.abs(r.raw[k] - P[k]) > 1e-9);
+  state.params[L.id] = P;
+  selectLaw(L.id);
+  msg.className = 'ok';
+  msg.innerHTML = `Reconnu : ${lawTitle(L)}, <span class="math">X ∼ ${L.notation(P)}</span>${r.notes.length ? ` (${r.notes.join(' ; ')})` : ''}.` + (changed.length ? ` Paramètre${changed.length > 1 ? 's' : ''} ajusté${changed.length > 1 ? 's' : ''} aux limites autorisées : ${changed.map(k => `${L.params.find(q => q.key === k).sym} = ${fmt(P[k])}`).join(', ')}.` : '');
+});
+
+selectLaw(state.law.id);
+</script>
+
+</body>
+</html>
