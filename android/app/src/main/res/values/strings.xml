@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Atlas des lois</string>
+    <string name="title_activity_main">Atlas des lois</string>
+    <string name="package_name">com.parfaittsida.atlaslois</string>
+    <string name="custom_url_scheme">com.parfaittsida.atlaslois</string>
+</resources>
