@@ -357,6 +357,12 @@ table.rank tr.sel { background: var(--accent-soft); box-shadow: inset 3px 0 0 va
 .sol-chart { padding: 6px; }
 .sol-sum ul { margin: 6px 0 0; padding-left: 1.2em; display: grid; gap: 4px; }
 #exo-text { width: 100%; min-height: 150px; padding: 10px 12px; border: 1.5px solid var(--rule); border-radius: 8px; background: var(--paper); font-family: var(--f-body); font-size: 1rem; resize: vertical; }
+.verdict{display:flex;gap:.7rem;align-items:flex-start;border:1px solid var(--rule);border-left-width:4px;border-radius:10px;padding:.7rem .9rem;margin:.8rem 0;background:var(--surface)}
+.verdict .vi{font-weight:700;font-size:1.1rem;line-height:1.3}
+.verdict ul{margin:.3rem 0 0 1.1rem;padding:0;font-size:.92rem}
+.verdict.ok{border-left-color:#2e8b57}.verdict.ok .vi{color:#2e8b57}
+.verdict.check{border-left-color:#d4900a}.verdict.check .vi{color:#d4900a}
+.verdict.no{border-left-color:#c0392b}.verdict.no .vi{color:#c0392b}
 </style>
 
 <header class="top">
@@ -2154,7 +2160,7 @@ function lawFromCue(sentence, opts) {
         const ns = numsIn(after); const hasBr = /[\[\]]/.test(after.slice(0, 40));
         raw.a = ns[0]; raw.b = ns[1];
         if (ns.length === 1) { raw.a = 1; raw.b = ns[0]; }
-        if (id === 'uniform' && (hasBr || [raw.a, raw.b].some(x => !Number.isInteger(x)))) return lawFromCueResult('cuniform', raw, notes);
+        if (id === 'uniform' && (hasBr || /uniformement|uniformly|uniformemente|temps|\btime\b|minutes?|heures?|hours?|tiempo|tempo|horas?|duree|attente|waiting|espera/.test(nrm(sentence)) || [raw.a, raw.b].some(x => !Number.isInteger(x)))) return lawFromCueResult('cuniform', raw, notes);
         break;
       }
       case 'normal': case 'lognormal': {
@@ -2205,18 +2211,89 @@ function findDefinitions(text, opts) {
 
 // Aide : lois probables pour un énoncé qui ne donne pas la loi
 const CUE_GUESS = [
-  ['hypergeometric', /sans remise|without replacement|sin reposicion|sem reposicao|sans remettre/, 'tirage sans remise'],
-  ['geometric', /premier succes|first success|primer exito|primeiro sucesso|jusqu'a (?:obtenir|ce que)|until the first|hasta (?:obtener|que)|ate (?:obter|que)/, 'attente du premier succès'],
-  ['poisson', /en moyenne[^.?!]{0,60}(?:par|chaque|\/)\s*(?:minute|heure|jour|an|mois|semaine|seconde)|on average[^.?!]{0,60}per\s+(?:minute|hour|day|year|month|week|second)|por\s+(?:minuto|hora|dia|ano|mes|semana|segundo)[^.?!]{0,60}(?:en promedio|em media)|(?:en promedio|em media)[^.?!]{0,60}por\s+(?:minuto|hora|dia|ano|mes|semana|segundo)/, 'événements indépendants à taux moyen constant'],
-  ['exponential', /duree de vie|lifetime|vida util|tempo de vida|temps d'attente|waiting time|tiempo de espera|tempo de espera|sans usure|memoryless|sin memoria|sem memoria/, 'durée d\'attente ou de vie sans usure'],
-  ['cuniform', /au hasard dans l'intervalle|uniformement|uniformly|uniformemente|at random in the interval|al azar en el intervalo|ao acaso no intervalo/, 'valeur au hasard dans un intervalle'],
-  ['binomial', /\d+\s*(?:fois|times|veces|vezes|essais|trials|ensayos|tentativas|epreuves|lancers|throws|lanzamientos|lancamentos|pieces|parts|piezas|pecas)|independan?t|independiente|independente/, 'nombre de succès sur n essais indépendants'],
-  ['normal', /(?:moyenne|mean|media)[^.?!]{0,40}(?:ecart[\s-]?type|standard deviation|desviacion|desvio)|cloche|bell curve|campana|sino/, 'grandeur en cloche (moyenne et écart-type)']
+  ['hypergeometric', /sans remise|without replacement|sin reposicion|sem reposicao|sans remettre/, tl('tirage sans remise')],
+  ['geometric', /premier succes|first success|primer exito|primeiro sucesso|jusqu'a\s+(?:obtenir|toucher|avoir|reussir|ce que|que)|until\b|hasta (?:obtener|que|acertar)|ate (?:obter|que|acertar)/, tl('attente du premier succès')],
+  ['poisson', /en moyenne[^.?!]{0,60}(?:par|chaque|\/)\s*(?:minute|heure|jour|an|mois|semaine|seconde)|on average[^.?!]{0,60}per\s+(?:minute|hour|day|year|month|week|second)|por\s+(?:minuto|hora|dia|ano|mes|semana|segundo)[^.?!]{0,60}(?:en promedio|em media)|(?:en promedio|em media)[^.?!]{0,60}por\s+(?:minuto|hora|dia|ano|mes|semana|segundo)/, tl('événements indépendants à taux moyen constant')],
+  ['exponential', /duree de vie|lifetime|vida util|tempo de vida|temps d'attente|waiting time|tiempo de espera|tempo de espera|sans usure|memoryless|sin memoria|sem memoria/, tl('durée d\'attente ou de vie sans usure')],
+  ['cuniform', /au hasard dans l'intervalle|uniformement|uniformly|uniformemente|at random in the interval|al azar en el intervalo|ao acaso no intervalo/, tl('valeur au hasard dans un intervalle')],
+  ['binomial', /\d+\s*(?:fois|times|veces|vezes|essais|trials|ensayos|tentativas|epreuves|lancers|throws|lanzamientos|lancamentos|pieces|parts|piezas|pecas|questions|tirs|shots|rolls|attempts|tentatives|patients|pacientes|items|articles|appareils|graines|seeds|personnes|people|personas|pessoas|clients|preguntas|perguntas)|independan?t|\bqcm\b|multiple[\s-]choice|opcion multiple|multipla escolha|independiente|independente/, tl('nombre de succès sur n essais indépendants')],
+  ['normal', /(?:moyenne|mean|media)[^.?!]{0,40}(?:ecart[\s-]?type|standard deviation|desviacion|desvio)|cloche|bell curve|campana|sino/, tl('grandeur en cloche (moyenne et écart-type)')]
 ];
 function guessLaws(text) {
   const n = nrm(text); const out = [];
   for (const [id, re, why] of CUE_GUESS) if (re.test(n)) out.push({ id, why });
   return out;
+}
+
+// Énoncés « en mots » : on déduit la loi et ses paramètres du contexte
+const W2N = { zero: 0, un: 1, une: 1, deux: 2, trois: 3, quatre: 4, cinq: 5, six: 6, sept: 7, huit: 8, neuf: 9, dix: 10, one: 1, two: 2, three: 3, four: 4, five: 5, seven: 7, eight: 8, nine: 9, ten: 10, cero: 0, uno: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10, um: 1, uma: 1, dois: 2, duas: 2, quatro: 4, sete: 7, oito: 8, dez: 10 };
+const EV_KEYS = 'au moins|au plus|exactement|plus de|moins de|at least|at most|exactly|more than|less than|fewer than|al menos|como maximo|exactamente|mas de|menos de|pelo menos|no maximo|exatamente|mais de|menos de|obtenir|obtain|get|obtener|obter|avoir|have|tener|ter|entre|between';
+function wordsToNum(n) {
+  return n.replace(/\b(?:aucune?s?|aucun|none|ninguno|ninguna|nenhum|nenhuma)\b/g, 'exactement 0')
+    .replace(new RegExp('\\b(' + EV_KEYS + ')\\s+(' + Object.keys(W2N).join('|') + ')\\b', 'g'), (m, k, w) => k + ' ' + W2N[w]);
+}
+const COIN = /\b(?:coins?|monedas?|moedas?|pile ou face|piles?|faces?|heads|tails|caras?|cruz)\b/;
+const FAIR = /equilibre|fair|honest|honnete|balanced|justa|justo|equilibrad|nao viciad|non truque|no trucad/;
+function inferLaw(text) {
+  const t = prepText(text), n = nrm(t);
+  const num = '(' + NUMRE + ')';
+  const first = (re, g = 1) => { const m = re.exec(n); return m ? toNum(m[g]) : NaN; };
+  const gs = guessLaws(text);
+  const order = ['binomial', 'hypergeometric', 'geometric', 'poisson', 'exponential', 'cuniform', 'normal'];
+  const cand = [...new Set([...gs.map(g => g.id), ...(/\b(?:de|dado|dice|die|dado)\b/.test(n) && /\d+\s*(?:fois|times|veces|vezes)/.test(n) ? [] : [])])];
+  const dieP = /\b(?:de|des|dice|die|dado|dados)\b/.test(n) && /\b(?:six(?:es)?|6|seis)\b/.test(n) ? 1 / 6 : NaN;
+  const mcq = (m => m ? 1 / toNum(m[1]) : NaN)(new RegExp('(\\d+)\\s*(?:reponses|choix|options|choices|answers|alternativas|respuestas|respostas)').exec(n));
+  const pDecl = first(new RegExp('(?:probabilit\\w*|probability|probabilidad\\w*|probabilidade\\w*|proportion|taux de|rate of|p)\\s*(?:de succes|of success|de exito|de sucesso|de|d\'|of|=|:|est|is|es|e)?\\s*(?:de |of )?(0[.,]\\d+|1(?:[.,]0+)?)'));
+  const out = [];
+  for (const id of cand) {
+    const raw = {};
+    switch (id) {
+      case 'binomial': {
+        raw.n = first(new RegExp('(\\d+)\\s*(?:\\w+\\s+){0,2}?(?:fois|times|veces|vezes|essais|trials|ensayos|tentativas|tentatives|epreuves|lancers|throws|tosses|tirs|shots|lanzamientos|lancamentos|questions|pieces|parts|piezas|pecas|articles|items|clients|personnes|people|personas|pessoas|patients|pacientes|appareils|devices|bebes|babies|graines|seeds|semillas|sementes)'));
+        raw.p = Number.isFinite(pDecl) ? pDecl : (Number.isFinite(mcq) ? mcq : first(/(?<![\d.,])(0[.,]\d+)/)); if (!Number.isFinite(raw.p)) raw.p = Number.isFinite(dieP) ? dieP : (FAIR.test(n) || COIN.test(n) ? 0.5 : NaN);
+        if (!Number.isFinite(raw.p) && Number.isFinite(dieP)) raw.p = dieP;
+        break;
+      }
+      case 'geometric': raw.p = Number.isFinite(pDecl) ? pDecl : first(/(?<![\d.,])(0[.,]\d+)/); if (!Number.isFinite(raw.p)) raw.p = Number.isFinite(dieP) ? dieP : (FAIR.test(n) || COIN.test(n) ? 0.5 : NaN); break;
+      case 'poisson': raw.lambda = first(new RegExp('(?:en moyenne|on average|en promedio|em media|moyenne de|average of|mean of|media de|taux de|rate of)\\D{0,40}?' + num)); if (!Number.isFinite(raw.lambda)) raw.lambda = first(new RegExp('(?:lambda|λ|parametre|parameter|parametro)\\s*(?:=|:|de|of)?\\s*' + num)); break;
+      case 'exponential': { const mean = first(new RegExp('(?:moyenne|mean|average|promedio|media)\\D{0,30}?' + num)); const rate = first(new RegExp('(?:taux|rate|tasa|taxa|lambda|λ)\\D{0,15}?' + num)); raw.lambda = Number.isFinite(rate) ? rate : (mean > 0 ? 1 / mean : NaN); break; }
+      case 'cuniform': { const m = new RegExp('(?:entre|between|entre|\\[)\\s*' + num + '\\s*(?:et|and|y|e|;)\\s*' + num).exec(n); if (m) { raw.a = toNum(m[1]); raw.b = toNum(m[2]); } break; }
+      case 'normal': { const mu = grab(n, MEAN_LABELS), sd = grab(n, SD_LABELS); if (Number.isFinite(mu) && Number.isFinite(sd)) { raw.mu = mu; raw.sigma = sd * sd; } break; }
+      case 'hypergeometric': {
+        const nd = first(new RegExp('(?:tire\\w*|tirons|draw\\w*|pick\\w*|select\\w*|extrae\\w*|saca\\w*|retir\\w*|sorteia\\w*|choisit|prelev\\w*)\\D{0,20}?(\\d+)'));
+        const ns = (n.match(/\d+/g) || []).map(Number); const rest = ns.filter((x, i) => !(Number.isFinite(nd) && x === nd && ns.indexOf(x) === i));
+        raw.n = nd; raw.N = rest[0]; raw.K = rest[1]; if (raw.K > raw.N) [raw.N, raw.K] = [raw.K, raw.N]; break;
+      }
+    }
+    const L = getLaw(id); const ok = L.params.every(q => Number.isFinite(raw[q.key]));
+    out.push({ id, raw: ok ? raw : { ...raw }, complete: ok, why: gs.find(g => g.id === id).why });
+  }
+  return out;
+}
+const OUT_OF_SCOPE = [
+  [/intervalle de confiance|confidence interval|intervalo de confian|test d'hypothese|hypothesis test|prueba de hipotesis|teste de hipotese|p-?valeur|p-?value|niveau de signification|significance level|nivel de significancia|nivel de significacion|nivel de significancia/, tl('inférence statistique (test, intervalle de confiance) : hors du calcul sur une loi')],
+  [/regression|correlation|covariance|moindres carres|least squares|minimos cuadrados|minimos quadrados/, tl('régression, corrélation ou covariance : variables liées, hors du catalogue')],
+  [/probabilites? conditionnelles?|conditional probability|bayes|probabilidad condicional|probabilidade condicional|probabilites totales|total probability|arbre pondere|tree diagram|diagrama de arbol|arvore de probabilidade/, tl('probabilités conditionnelles / formule de Bayes : non prises en charge')],
+  [/loi conjointe|joint distribution|densite conjointe|distribucion conjunta|distribuicao conjunta|marginale?|marginal/, tl('lois conjointes ou marginales : plusieurs variables liées')],
+  [/chaines? de markov|markov chain|cadena de markov|cadeia de markov|matrice de transition|transition matrix/, tl('chaînes de Markov : hors du catalogue')],
+  [/denombrement|permutations?|combinaisons?|arrangements?|combinations?|combinaciones|combinacoes/, tl('dénombrement pur (sans variable aléatoire) : la calculatrice combinatoire n\'est pas dans ce catalogue')],
+  [/weibull|cauchy|pareto|rayleigh|logistique|logistic|multinomia|laplace distribution|loi de laplace\b.*\bdouble/, tl('loi absente du catalogue (Weibull, Cauchy, Pareto, multinomiale…)')],
+  [/series statistique|serie statistique|diagramme en boite|boxplot|histogramme|quartiles?|tableau d'effectifs|frequency table|effectifs/, tl('statistique descriptive : utilisez plutôt « Ajuster une loi à mes données »')]
+];
+function diagnose(text, res) {
+  const n = nrm(text); const reasons = [];
+  for (const [re, why] of OUT_OF_SCOPE) if (re.test(n)) reasons.push(why);
+  const okSol = res.solutions.filter(s => !s.err).length, badSol = res.solutions.length - okSol;
+  const probaWords = /probabilit|probability|probabilidad|esperance|expected|variance|loi |distribution|distribucion|distribuicao|random variable|variable aleatoire|variable aleatoria|variavel aleatoria|\bp\s*\(/.test(n);
+  let status, head;
+  if (!res.defs.length && res.guesses.length && !reasons.length) { status = 'check'; head = tl('Une loi du catalogue semble convenir, mais ses paramètres ne sont pas dans l\'énoncé : complétez-les ci-dessous.'); }
+  else if (!res.defs.length) {
+    status = 'no';
+    head = reasons.length ? tl('Cet exercice ne peut pas être résolu avec les lois de ce catalogue.') : (probaWords || /\d/.test(n) ? tl('Je ne reconnais pas dans cet énoncé une variable qui suit l\'une des 16 lois du catalogue.') : tl('Ce texte ne ressemble pas à un exercice de probabilités.'));
+  } else if (reasons.length && !okSol) { status = 'no'; head = tl('Une loi du catalogue est présente, mais ce que l\'énoncé demande n\'est pas calculable ici.'); }
+  else if (reasons.length || badSol || res.inferred || !res.solutions.length) { status = 'check'; head = res.inferred && !reasons.length && !badSol && res.solutions.length ? tl('Exercice résoluble avec les lois du catalogue, mais la loi a été déduite du texte : vérifiez-la.') : tl('Exercice partiellement résoluble avec les lois du catalogue.'); }
+  else { status = 'ok'; head = tl('Exercice résoluble avec les lois du catalogue.'); }
+  return { status, head, reasons };
 }
 
 // ---------- Questions ----------
@@ -2229,7 +2306,7 @@ function findQuestions(text, defs, opts) {
   const segs = t.split(/\n+|(?<=[.!?])\s+/).map(s => s.trim()).filter(Boolean);
   for (const seg of segs) {
     const label = (/^\s*(\(?[a-z0-9]{1,2}[\).])\s+/i.exec(seg) || [])[1] || '';
-    const n = nrm(seg); const found = [];
+    const n = wordsToNum(nrm(seg)); const found = [];
     // P(X <= k), P(X = k), P(a <= X <= b)
     let m; const re2 = new RegExp('p\\s*\\(\\s*(' + NUMRE + ')\\s*(<=|≤|<)\\s*([a-z])\\s*(<=|≤|<)\\s*(' + NUMRE + ')\\s*\\)', 'gi');
     const used = [];
@@ -2245,20 +2322,21 @@ function findQuestions(text, defs, opts) {
     const hasNotation = found.some(f => f.kind === 'event' || f.kind === 'quantile');
     const isDef = /\b(?:soit|let|sea|seja)\b/.test(n) || /(?:~|∼|suit|follows|sigue|segue)/.test(seg);
     // verbal events
-    if (!hasNotation && isQ && /probabilit|probability|probabilidad|probabilidade/.test(n)) {
+    if (!hasNotation && isQ && /probabilit|probability|probabilidad|probabilidade|chance|likelihood|proportion|odds/.test(n)) {
       const v = dflt; const num = '(' + NUMRE + ')';
       let mm;
       if ((mm = new RegExp('(?:entre|between)\\s+' + num + '\\s+(?:et|and|y|e)\\s+' + num).exec(n))) found.push({ kind: 'event', v, q: { type: 'between', a: toNum(mm[1]), b: toNum(mm[2]) } });
-      else if ((mm = new RegExp('(?:au plus|au maximum|at most|no maximo|como maximo|menos ou egal|less than or equal to|maximo de)\\s+(?:de\\s+|a\\s+|of\\s+)?' + num).exec(n))) found.push({ kind: 'event', v, q: { type: 'le', a: toNum(mm[1]) } });
-      else if ((mm = new RegExp('(?:au moins|at least|al menos|pelo menos|minimo de|au minimum)\\s+(?:de\\s+|a\\s+|of\\s+)?' + num).exec(n))) found.push({ kind: 'event', v, q: { type: 'ge', a: toNum(mm[1]) } });
+      else if ((mm = new RegExp('(?:au plus|au maximum|tout au plus|a lo sumo|no more than|not more than|up to|at most|no maximo|como maximo|menos ou egal|less than or equal to|maximo de)\\s+(?:de\\s+|a\\s+|of\\s+)?' + num).exec(n))) found.push({ kind: 'event', v, q: { type: 'le', a: toNum(mm[1]) } });
+      else if ((mm = new RegExp('(?:au moins|at least|no menos de|not less than|al menos|pelo menos|minimo de|au minimum)\\s+(?:de\\s+|a\\s+|of\\s+)?' + num).exec(n))) found.push({ kind: 'event', v, q: { type: 'ge', a: toNum(mm[1]) } });
       else if ((mm = new RegExp('(?:exactement|exactly|exactamente|exatamente)\\s+' + num).exec(n))) found.push({ kind: 'event', v, q: { type: 'eq', a: toNum(mm[1]) } });
       else if ((mm = new RegExp('(?:strictement\\s+)?(?:moins de|inferieur(?:e)?\\s+a|less than|fewer than|menos de|menor que|menos que|inferior a|abaixo de|below)\\s+' + num).exec(n))) found.push({ kind: 'event', v, q: { type: 'lt', a: toNum(mm[1]) } });
       else if ((mm = new RegExp('(?:plus de|superieur(?:e)?\\s+a|more than|greater than|above|exceed\\w*|depasse\\w*|mas de|mayor que|mais de|mais que|superior a|acima de)\\s+' + num).exec(n))) found.push({ kind: 'event', v, q: { type: 'gt', a: toNum(mm[1]) } });
+      else if ((mm = new RegExp('(?:obtenir|obtain|get|obtener|obter|avoir|have|tener|ter|observer|observe|observar)\\s+(?:exactement\\s+|exactly\\s+)?' + num).exec(n))) found.push({ kind: 'event', v, q: { type: 'eq', a: toNum(mm[1]) } });
     }
     // moments : seulement dans une phrase de question qui ne définit pas la loi
     if (isQ && !isDef) {
       const v = dflt;
-      if (/esperance|expected value|expectation|valor esperado|esperanza|\bmean\b|moyenne|\bmedia\b/.test(n) && !/p\s*\(/.test(n)) found.push({ kind: 'mean', v });
+      if (/esperance|expected value|expectation|valor esperado|esperanza|\bmean\b|moyenn?e?\b|\bmedia\b|average|promedio|\bmedio\b/.test(n) && !/p\s*\(/.test(n)) found.push({ kind: 'mean', v });
       if (/variance|varianza|variancia/.test(n)) found.push({ kind: 'variance', v });
       if (/ecart[\s-]?type|standard deviation|desviacion|desvio/.test(n)) found.push({ kind: 'sd', v });
       if (/mediane|\bmedian\b|mediana/.test(n)) found.push({ kind: 'median', v });
@@ -2270,7 +2348,7 @@ function findQuestions(text, defs, opts) {
       while ((m = reM.exec(n))) { const k = m[1].toLowerCase(), v = vOf(m[2]); const kind = k === 'e' ? 'mean' : (k === 'v' || k === 'var') ? 'variance' : 'sd'; if (!found.some(f => f.kind === kind && f.v === v)) found.push({ kind, v }); }
     }
     if (found.length) found.forEach(f => out.push({ ...f, label, seg: seg.replace(/\s+/g, ' ').slice(0, 220) }));
-    else if (isQ && !isDef && segs.length > 1) out.push({ kind: 'unknown', label, seg: seg.slice(0, 220), v: dflt });
+    else if (isQ && !isDef && segs.length > 1 && /\?|calcul|determin|trouv|find|compute|calculate|halle|encuentre|encontre|obtenha|combien|quelle?s?\b|what|cual|qual\b/.test(n)) out.push({ kind: 'unknown', label, seg: seg.slice(0, 220), v: dflt });
   }
   return out;
 }
@@ -2346,10 +2424,21 @@ function solveExercise(text, opts = {}) {
   opts = { normalConv: 'var', ...opts };
   let { defs, unresolved } = findDefinitions(text, opts);
   if (opts.forced) { const L = getLaw(opts.forced.id), P = constrainWide(L, { ...defaults(L), ...opts.forced.P }); defs = [{ v: 'X', id: L.id, L, P, raw: P, notes: [], clamped: [] }]; unresolved = []; }
+  let inferred = false, guesses = [];
+  if (!defs.length && !opts.forced) {
+    const cands = inferLaw(text); guesses = cands.map(c => ({ id: c.id, why: c.why, raw: c.raw }));
+    const c = cands.find(x => x.complete);
+    if (c) {
+      const L = getLaw(c.id), P = constrainWide(L, { ...defaults(L), ...c.raw });
+      defs = [{ v: 'X', id: L.id, L, P, raw: c.raw, notes: [tlx`Loi déduite du contexte de l'énoncé (${c.why}) : à vérifier`], clamped: [] }]; inferred = true; guesses = [];
+    }
+  }
   const defsByVar = Object.fromEntries(defs.map(d => [d.v, d]));
   const questions = findQuestions(text, defs, opts);
   const solutions = questions.map(q => q.kind === 'unknown' ? { item: q, err: tl('Cette question n\'a pas été reconnue : essayez de la reformuler avec P(X ≤ k), E(X), V(X)…') } : solveQuestion(q, defsByVar));
-  return { defs, unresolved, questions, solutions, guesses: defs.length ? [] : guessLaws(text) };
+  const res = { defs, unresolved, questions, solutions, guesses, inferred };
+  res.diag = diagnose(text, res);
+  return res;
 }
 
 // ---------- Traduction de la page statique et des données ----------
@@ -3299,8 +3388,8 @@ const EXO_EXAMPLES = [
   { label: tl('Exponentielle : durée de vie'), text: tl('La durée de vie X d\'une ampoule suit une loi exponentielle de moyenne 1000 heures.\nCalculer la probabilité que l\'ampoule dure plus de 1500 heures.\nCalculer l\'espérance et l\'écart-type de X.') }
 ];
 const exo = { res: null, text: '' };
-function exoParamForm(id, v) {
-  const L = getLaw(id), P = constrain(L, defaults(L));
+function exoParamForm(id, v, raw) {
+  const L = getLaw(id), P = constrainWide(L, { ...defaults(L), ...Object.fromEntries(Object.entries(raw || {}).filter(([, x]) => Number.isFinite(x))) });
   return `<div class="panel exo-form" data-form-var="${v}"><div class="slot-head"><b>${tl('Choisissez la loi et ses paramètres')}</b> ${lawSelectHTML(id, 'data-exo-law="1" aria-label="' + esc(tl('Loi')) + '"')}</div>
     <div id="exo-params">${paramRowsHTML(L, P, 'E')}</div>
     <button class="btn" type="button" id="exo-force">${tl('Corriger avec cette loi')}</button></div>`;
@@ -3336,15 +3425,19 @@ function solCard(s, i, byVar) {
   return `<li class="panel sol-q">${head}<div class="sol-body"><div><p class="sol-h">${tl('Méthode')}</p><ol class="sol-steps">${s.steps.map(x => `<li><span class="math">${x}</span></li>`).join('')}</ol>
     ${s.note ? `<p class="note">${s.note}</p>` : ''}<p class="sol-ans"><span class="sol-h">${tl('Réponse')}</span> <span class="math">${s.answer}</span></p></div>${chart}</div></li>`;
 }
+function verdictHTML(d) {
+  const ic = { ok: '✓', check: '!', no: '✗' }[d.status];
+  return `<div class="verdict ${d.status}" role="status"><span class="vi" aria-hidden="true">${ic}</span><div><b>${d.head}</b>${d.reasons.length ? `<ul>${d.reasons.map(r => `<li>${r}</li>`).join('')}</ul>` : ''}</div></div>`;
+}
 function renderExo(res) {
   const out = $('#exo-out'); out.hidden = false;
   const byVar = Object.fromEntries(res.defs.map(d => [d.v, d]));
-  let html = '';
+  let html = verdictHTML(res.diag);
   if (!res.defs.length) {
     const g = res.guesses.length ? res.guesses : (res.unresolved.length ? [{ id: res.unresolved[0].id, why: '' }] : []);
     html += `<div class="panel"><h3>${tl('Je n\'ai pas trouvé la loi de la variable')}</h3><p>${tl('Écrivez-la dans l\'énoncé, par exemple « X suit B(10 ; 0,3) » ou « X suit la loi de Poisson de paramètre 4 », ou choisissez-la ci-dessous.')}</p>
       ${g.length ? `<p class="note">${tl('Indices trouvés dans l\'énoncé :')} ${g.map(x => `${getLaw(x.id).name}${x.why ? ' (' + esc(tl(x.why)) + ')' : ''}`).join(' ; ')}.</p>` : ''}</div>
-      ${exoParamForm(g.length ? g[0].id : 'binomial', 'X')}`;
+      ${exoParamForm(g.length ? g[0].id : 'binomial', 'X', g.length ? g[0].raw : null)}`;
     out.innerHTML = html; return;
   }
   html += `<div class="sec-head"><h2>${tl('Données de l\'exercice')}</h2></div><div class="sol-laws">${res.defs.map(lawCard).join('')}</div>`;
