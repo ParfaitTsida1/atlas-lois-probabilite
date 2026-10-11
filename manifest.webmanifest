@@ -1,8 +1,8 @@
 {
-  "name": "Atlas des lois de probabilité",
-  "short_name": "Lois",
-  "description": "Lois discrètes et continues : caractéristiques, graphiques, simulations et exemples.",
-  "lang": "fr",
+  "name": "Atlas of Probability Distributions",
+  "short_name": "Distributions",
+  "description": "Discrete and continuous distributions: properties, charts, simulations and worked examples.",
+  "lang": "en",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
